@@ -9,7 +9,10 @@
     "lint": "next lint",
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx drizzle-kit migrate",
-    "db:push": "npx drizzle-kit push"
+    "db:push": "npx drizzle-kit push",
+    "test:languagetool": "node scripts/test-languagetool.js",
+    "test:languagetool:core": "node scripts/test-languagetool.js core",
+    "test:languagetool:api": "node scripts/test-languagetool.js api"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.22.0",
@@ -23,7 +26,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "svix": "^1.67.0",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
