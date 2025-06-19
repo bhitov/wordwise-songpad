@@ -12,9 +12,9 @@ import { Toaster } from 'sonner';
  * Editor page props
  */
 interface EditorPageProps {
-  params: {
+  params: Promise<{
     documentId: string;
-  };
+  }>;
 }
 
 /**

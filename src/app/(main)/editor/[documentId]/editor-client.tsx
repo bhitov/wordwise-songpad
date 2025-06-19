@@ -5,8 +5,8 @@
 
 'use client';
 
-import { useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useCallback, useState, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEditorStore } from '@/lib/store/editor-store';
 import { TipTapEditor } from '@/components/shared/tiptap-editor';
 import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
@@ -17,7 +17,8 @@ import {
   FileText, 
   AlertCircle,
   Loader2,
-  CheckCircle2 
+  CheckCircle2,
+  ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -61,6 +62,7 @@ async function saveDocument(documentId: string, content: string, title: string) 
  */
 export function EditorClient({ initialDocument }: EditorClientProps) {
   const params = useParams();
+  const router = useRouter();
   const documentId = params.documentId as string;
 
   const {
@@ -70,10 +72,16 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     hasUnsavedChanges,
     lastSaved,
     setDocument,
+    updateTitle,
     setSaving,
     setLastSaved,
     reset,
   } = useEditorStore();
+
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Debounce content for auto-save (3 seconds)
   const debouncedContent = useDebounce(document?.content || '', 3000);
@@ -126,6 +134,65 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       performSave();
     }
   }, [hasUnsavedChanges, performSave]);
+
+  // Title editing handlers
+  const handleTitleClick = useCallback(() => {
+    if (!document) return;
+    setTitleValue(document.title);
+    setIsEditingTitle(true);
+  }, [document]);
+
+  const handleTitleSave = useCallback(() => {
+    if (!document || !titleValue.trim()) {
+      setIsEditingTitle(false);
+      setTitleValue('');
+      return;
+    }
+
+    const trimmedTitle = titleValue.trim();
+    if (trimmedTitle !== document.title) {
+      updateTitle(trimmedTitle);
+    }
+    
+    setIsEditingTitle(false);
+    setTitleValue('');
+  }, [document, titleValue, updateTitle]);
+
+  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsEditingTitle(false);
+      setTitleValue('');
+    }
+  }, [handleTitleSave]);
+
+  const handleTitleBlur = useCallback(() => {
+    handleTitleSave();
+  }, [handleTitleSave]);
+
+  // Navigation handler with unsaved changes warning
+  const handleBackToDashboard = useCallback(() => {
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to leave? Your changes will be lost.'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    router.push('/dashboard');
+  }, [hasUnsavedChanges, router]);
+
+  // Focus title input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -181,6 +248,16 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       <div className="border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToDashboard}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <div className="h-4 w-px bg-border" />
             <FileText className="h-5 w-5 text-muted-foreground" />
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>
@@ -234,9 +311,27 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           {/* Document title aligned with editor */}
           <div className="max-w-4xl mx-auto p-6">
             <div className="mb-4">
-              <h1 className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent">
-                {document.title || 'Untitled Document'}
-              </h1>
+              {isEditingTitle ? (
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  onBlur={handleTitleBlur}
+                  className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent w-full resize-none"
+                  placeholder="Untitled Document"
+                  maxLength={200}
+                />
+              ) : (
+                <h1 
+                  className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent cursor-text hover:bg-muted/50 rounded px-1 py-1 -mx-1 transition-colors"
+                  onClick={handleTitleClick}
+                  title="Click to edit title"
+                >
+                  {document.title || 'Untitled Document'}
+                </h1>
+              )}
             </div>
           </div>
           

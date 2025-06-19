@@ -10,9 +10,13 @@ import { Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useEditorStore } from '@/lib/store/editor-store';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, XCircle, AlertCircle, BookOpen, Palette } from 'lucide-react';
 import type { SimplifiedCorrection } from '@/lib/core/checker';
 
 // Extend TipTap types for our custom commands
@@ -109,7 +113,7 @@ const CorrectionHighlight = Mark.create({
     return [
       'span',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        class: `cursor-pointer transition-colors duration-200 ${colorClasses[correctionType as keyof typeof colorClasses] || colorClasses.grammar}`,
+        class: `cursor-text transition-colors duration-200 ${colorClasses[correctionType as keyof typeof colorClasses] || colorClasses.grammar}`,
       }),
       0,
     ];
@@ -190,6 +194,152 @@ async function checkTextForCorrections(
 }
 
 /**
+ * Correction popup component
+ */
+interface CorrectionPopupProps {
+  correction: SimplifiedCorrection;
+  position: { x: number; y: number };
+  onApply: (suggestion: string) => void;
+  onDismiss: () => void;
+  onClose: () => void;
+}
+
+function CorrectionPopup({ correction, position, onApply, onDismiss, onClose }: CorrectionPopupProps) {
+  const getCorrectionIcon = (type: SimplifiedCorrection['type']) => {
+    switch (type) {
+      case 'grammar':
+        return <BookOpen className="h-4 w-4" />;
+      case 'spelling':
+        return <AlertCircle className="h-4 w-4" />;
+      case 'style':
+        return <Palette className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
+  const getCorrectionColors = (type: SimplifiedCorrection['type']) => {
+    switch (type) {
+      case 'grammar':
+        return {
+          badge: 'bg-blue-100 text-blue-800',
+          icon: 'text-blue-600',
+        };
+      case 'spelling':
+        return {
+          badge: 'bg-red-100 text-red-800',
+          icon: 'text-red-600',
+        };
+      case 'style':
+        return {
+          badge: 'bg-purple-100 text-purple-800',
+          icon: 'text-purple-600',
+        };
+      default:
+        return {
+          badge: 'bg-gray-100 text-gray-800',
+          icon: 'text-gray-600',
+        };
+    }
+  };
+
+  const colors = getCorrectionColors(correction.type);
+  const icon = getCorrectionIcon(correction.type);
+
+  return (
+    <div
+      className="fixed z-50 max-w-sm"
+      style={{
+        left: position.x,
+        top: position.y,
+      }}
+      data-correction-popup
+    >
+      <Card className="shadow-lg border-2">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <div className={colors.icon}>
+                {icon}
+              </div>
+              <Badge variant="secondary" className={colors.badge}>
+                {correction.type}
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={onClose}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </div>
+          <CardTitle className="text-sm font-medium">
+            {correction.shortMessage}
+          </CardTitle>
+          {correction.message !== correction.shortMessage && (
+            <CardDescription className="text-xs">
+              {correction.message}
+            </CardDescription>
+          )}
+        </CardHeader>
+
+        <CardContent className="pt-0">
+          <div className="space-y-3">
+            {/* Original text */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">
+                Original:
+              </p>
+              <p className="text-sm bg-red-50 px-2 py-1 rounded border-l-2 border-red-200">
+                "{correction.originalText}"
+              </p>
+            </div>
+
+            {/* Suggestions */}
+            {correction.suggestions.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Suggestions:
+                </p>
+                <div className="space-y-1">
+                  {correction.suggestions.map((suggestion, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start text-left h-auto p-2"
+                      onClick={() => onApply(suggestion)}
+                    >
+                      <CheckCircle2 className="h-3 w-3 mr-2 text-green-600" />
+                      <span className="flex-1">"{suggestion}"</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={onDismiss}
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/**
  * TipTap editor component with real-time grammar checking
  */
 export function TipTapEditor({ 
@@ -209,7 +359,16 @@ export function TipTapEditor({
     setIsCheckingGrammar,
     setCheckRequestId,
     selectCorrection,
+    applyCorrectionById,
+    dismissCorrectionById,
   } = useEditorStore();
+
+  // Popup state
+  const [popupState, setPopupState] = useState<{
+    correction: SimplifiedCorrection;
+    position: { x: number; y: number };
+  } | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Initialize TipTap editor
   const editor = useEditor({
@@ -242,8 +401,25 @@ export function TipTapEditor({
         const target = event.target as HTMLElement;
         const correctionId = target.getAttribute('data-correction-id');
         if (correctionId) {
-          selectCorrection(selectedCorrectionId === correctionId ? null : correctionId);
+          const correction = corrections.find(c => c.id === correctionId);
+          if (correction) {
+            // Calculate popup position
+            const rect = target.getBoundingClientRect();
+            const position = {
+              x: rect.left,
+              y: rect.bottom + 8, // 8px below the text
+            };
+            
+            // Show popup
+            setPopupState({ correction, position });
+            
+            // Also select in sidebar
+            selectCorrection(correctionId);
+          }
           return true;
+        } else {
+          // Click outside correction - close popup
+          setPopupState(null);
         }
         return false;
       },
@@ -368,6 +544,21 @@ export function TipTapEditor({
     editor.commands.blur();
   }, [editor, corrections]);
 
+  // Handle popup actions
+  const handleApplyCorrection = useCallback((correctionId: string, suggestion: string) => {
+    applyCorrectionById(correctionId, suggestion);
+    setPopupState(null);
+  }, [applyCorrectionById]);
+
+  const handleDismissCorrection = useCallback((correctionId: string) => {
+    dismissCorrectionById(correctionId);
+    setPopupState(null);
+  }, [dismissCorrectionById]);
+
+  const handleClosePopup = useCallback(() => {
+    setPopupState(null);
+  }, []);
+
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     // Ctrl/Cmd + S for save
@@ -375,7 +566,31 @@ export function TipTapEditor({
       event.preventDefault();
       onSave?.();
     }
+    // Escape to close popup
+    if (event.key === 'Escape') {
+      setPopupState(null);
+    }
   }, [onSave]);
+
+  // Handle click outside to close popup
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupState && editorRef.current && !editorRef.current.contains(event.target as Node)) {
+        // Check if click is not on the popup itself
+        const target = event.target as Element;
+        if (!target.closest('[data-correction-popup]')) {
+          setPopupState(null);
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        window.document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [popupState]);
 
   // Clean up editor on unmount
   useEffect(() => {
@@ -413,15 +628,25 @@ export function TipTapEditor({
         <div 
           className="relative"
           onKeyDown={handleKeyDown}
+          ref={editorRef}
         >
           <EditorContent 
             editor={editor}
             className="min-h-[500px] p-6 focus-within:outline-none"
           />
-          
-
         </div>
       </div>
+
+      {/* Correction popup */}
+      {popupState && (
+        <CorrectionPopup
+          correction={popupState.correction}
+          position={popupState.position}
+          onApply={(suggestion) => handleApplyCorrection(popupState.correction.id, suggestion)}
+          onDismiss={() => handleDismissCorrection(popupState.correction.id)}
+          onClose={handleClosePopup}
+        />
+      )}
     </div>
   );
 }

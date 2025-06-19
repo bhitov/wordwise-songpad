@@ -44,6 +44,7 @@ interface EditorState {
   // Actions
   setDocument: (document: Document) => void;
   updateContent: (content: string) => void;
+  updateTitle: (title: string) => void;
   setCorrections: (corrections: SimplifiedCorrection[], requestId: string) => void;
   setIsCheckingGrammar: (isChecking: boolean) => void;
   setCheckRequestId: (requestId: string | null) => void;
@@ -118,6 +119,26 @@ export const useEditorStore = create<EditorState>()(
           },
           false,
           'updateContent'
+        );
+      },
+
+      /**
+       * Update document title and mark as having unsaved changes
+       */
+      updateTitle: (title: string) => {
+        const { document } = get();
+        if (!document) return;
+
+        set(
+          {
+            document: {
+              ...document,
+              title,
+            },
+            hasUnsavedChanges: true,
+          },
+          false,
+          'updateTitle'
         );
       },
 

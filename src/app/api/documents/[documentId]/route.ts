@@ -23,7 +23,7 @@ const updateDocumentSchema = z.object({
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { documentId: string } }
+  { params }: { params: Promise<{ documentId: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -35,7 +35,7 @@ export async function PUT(
       );
     }
 
-    const { documentId } = params;
+    const { documentId } = await params;
     const body = await request.json();
 
     // Validate request body
@@ -117,7 +117,7 @@ export async function PUT(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { documentId: string } }
+  { params }: { params: Promise<{ documentId: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -129,7 +129,7 @@ export async function GET(
       );
     }
 
-    const { documentId } = params;
+    const { documentId } = await params;
 
     // Fetch the document
     const [document] = await db
