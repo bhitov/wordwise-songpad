@@ -10,7 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEditorStore } from '@/lib/store/editor-store';
 import { TipTapEditor } from '@/components/shared/tiptap-editor';
 import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
-import { GeneratedSongsList } from '@/components/shared/generated-songs-list';
+import { GeneratedSongsList, GeneratedSongsListRef } from '@/components/shared/generated-songs-list';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { 
@@ -87,6 +87,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
 
   // Song generation state
   const [isGeneratingSong, setIsGeneratingSong] = useState(false);
+  const songsListRef = useRef<GeneratedSongsListRef>(null);
 
   // Debounce content for auto-save (3 seconds)
   const debouncedContent = useDebounce(document?.content || '', 3000);
@@ -230,6 +231,11 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       
       if (data.success) {
         toast.success(`Song generation started! Task ID: ${data.data.taskId}`);
+        
+        // Refresh the songs list to show the new song immediately
+        if (songsListRef.current) {
+          songsListRef.current.refresh();
+        }
       } else {
         throw new Error(data.error || 'Failed to generate song');
       }
@@ -421,7 +427,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           
           {/* Generated Songs */}
           <div className="border-t p-4 max-h-96 overflow-auto">
-            <GeneratedSongsList documentId={documentId} />
+            <GeneratedSongsList ref={songsListRef} documentId={documentId} />
           </div>
         </div>
       </div>

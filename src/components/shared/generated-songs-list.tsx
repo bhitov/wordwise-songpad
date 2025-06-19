@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,13 @@ interface Song {
  */
 interface GeneratedSongsListProps {
   documentId: string;
+}
+
+/**
+ * Ref interface for imperative actions
+ */
+export interface GeneratedSongsListRef {
+  refresh: () => void;
 }
 
 /**
@@ -220,7 +227,8 @@ function SongCard({ song }: { song: Song }) {
 /**
  * Main component for displaying generated songs list
  */
-export function GeneratedSongsList({ documentId }: GeneratedSongsListProps) {
+export const GeneratedSongsList = forwardRef<GeneratedSongsListRef, GeneratedSongsListProps>(
+  function GeneratedSongsList({ documentId }, ref) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,6 +259,11 @@ export function GeneratedSongsList({ documentId }: GeneratedSongsListProps) {
       setIsLoading(false);
     }
   }, [documentId]);
+
+  // Expose refresh function via ref
+  useImperativeHandle(ref, () => ({
+    refresh: fetchSongs
+  }), [fetchSongs]);
 
   // Initial fetch
   useEffect(() => {
@@ -335,4 +348,5 @@ export function GeneratedSongsList({ documentId }: GeneratedSongsListProps) {
       </div>
     </div>
   );
-} 
+  }
+);

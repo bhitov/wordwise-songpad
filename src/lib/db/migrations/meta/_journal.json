@@ -15,6 +15,13 @@
       "when": 1750299881668,
       "tag": "0001_dry_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1750301760128,
+      "tag": "0002_striped_anita_blake",
+      "breakpoints": true
     }
   ]
 }
