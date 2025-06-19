@@ -13,6 +13,8 @@ import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
 import { GeneratedSongsList, GeneratedSongsListRef } from '@/components/shared/generated-songs-list';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/hooks/use-debounce';
+import { AIContextualWrapper } from '@/components/ai';
+import type { TextSelection } from '@/lib/ai';
 import { 
   Save, 
   FileText, 
@@ -247,6 +249,26 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       setIsGeneratingSong(false);
     }
   }, [document]);
+
+  // AI action handler
+  const handleAIAction = useCallback(async (actionId: string, selection: TextSelection) => {
+    console.log('🤖 AI Action triggered:', { actionId, selection });
+    
+    try {
+      // For now, we'll just show a placeholder message
+      // In the next step, we'll implement the actual OpenAI API call
+      toast.success(`AI Action "${actionId}" triggered for: "${selection.selectedText.substring(0, 50)}..."`);
+      
+      // TODO: Implement actual AI processing
+      // - Call OpenAI API with the selected text
+      // - Get the enhanced/rhyming version
+      // - Replace the selected text in the editor
+      
+    } catch (error) {
+      console.error('AI action failed:', error);
+      toast.error('AI action failed. Please try again.');
+    }
+  }, []);
 
   // Focus title input when editing starts
   useEffect(() => {
@@ -521,11 +543,16 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
             </div>
           </div>
           
-          <TipTapEditor
-            ref={editorRef}
-            placeholder="Start writing your document..."
-            onSave={handleSave}
-          />
+          <AIContextualWrapper
+            fullText={document.content}
+            onAIAction={handleAIAction}
+          >
+            <TipTapEditor
+              ref={editorRef}
+              placeholder="Start writing your document..."
+              onSave={handleSave}
+            />
+          </AIContextualWrapper>
         </div>
 
         {/* Right sidebar with suggestions and songs */}

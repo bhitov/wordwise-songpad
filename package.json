@@ -14,7 +14,9 @@
     "test:languagetool:core": "node scripts/test-languagetool.js core",
     "test:languagetool:api": "node scripts/test-languagetool.js api",
     "test:editor": "node scripts/test-editor.js",
-    "test:openai": "npx ts-node --project scripts/tsconfig.json scripts/test-openai.ts"
+    "test:openai": "npx ts-node --project scripts/tsconfig.json scripts/test-openai.ts",
+    "test:ai-actions": "npx ts-node --project scripts/tsconfig.json scripts/test-ai-actions.ts",
+    "test:integration": "npx ts-node --project scripts/tsconfig.json scripts/test-integration.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.22.0",
