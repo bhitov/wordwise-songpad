@@ -79,6 +79,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     updateTitle,
     setSaving,
     setLastSaved,
+    applyAITransformation,
     reset,
   } = useEditorStore();
 
@@ -293,29 +294,34 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
         transformed: transformedText,
       });
 
-      // Replace the selected text in the editor
-      const editor = editorRef.current.editor;
-      if (editor) {
-        // Find and replace the selected text
-        const { from, to } = editor.state.selection;
+      // Calculate cursor position before applying transformation
+      const transformedTextStartIndex = document.content.indexOf(selection.selectedText);
+      const newCursorPosition = transformedTextStartIndex !== -1 
+        ? transformedTextStartIndex + transformedText.length 
+        : -1;
+
+      // Use the AI transformation function to apply the change
+      applyAITransformation(selection.selectedText, transformedText);
+      
+      // Clear text selection in the editor after transformation
+      if (editorRef.current?.editor) {
+        const editor = editorRef.current.editor;
         
-        editor.chain()
-          .focus()
-          .setTextSelection({ from, to })
-          .insertContent(transformedText)
-          .run();
-        
-        // Update the document content in our store
-        const newContent = editor.getText();
-        setDocument({
-          ...document,
-          content: newContent,
-        });
-        
-        toast.success('Text transformed successfully!', { id: 'ai-processing' });
-      } else {
-        throw new Error('Could not access editor for text replacement');
+        setTimeout(() => {
+          if (newCursorPosition !== -1) {
+            // Set cursor position to end of transformed text and clear selection
+            editor.commands.focus();
+            editor.commands.setTextSelection(newCursorPosition);
+          } else {
+            // Fallback: just clear selection and focus
+            editor.commands.focus();
+            editor.commands.blur();
+            editor.commands.focus();
+          }
+        }, 0);
       }
+      
+      toast.success('Text transformed successfully!', { id: 'ai-processing' });
       
     } catch (error) {
       console.error('🤖 AI action failed:', error);
@@ -324,7 +330,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
         { id: 'ai-processing' }
       );
     }
-  }, [document, setDocument]);
+  }, [document, applyAITransformation]);
 
   // Focus title input when editing starts
   useEffect(() => {

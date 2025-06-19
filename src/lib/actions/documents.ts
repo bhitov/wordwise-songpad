@@ -153,4 +153,35 @@ export async function getDocument(documentId: string) {
   }
 
   return document;
+}
+
+/**
+ * Delete a document and all associated songs (with ownership check).
+ */
+export async function deleteDocument(documentId: string) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+
+  await ensureUserExists(userId);
+
+  // Verify the user owns this document
+  const [document] = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, documentId))
+    .limit(1);
+
+  if (!document || document.userId !== userId) {
+    throw new Error('Document not found or access denied');
+  }
+
+  // Delete the document (songs will be cascade deleted automatically)
+  await db
+    .delete(documents)
+    .where(eq(documents.id, documentId));
+
+  revalidatePath('/dashboard');
 } 

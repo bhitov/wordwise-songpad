@@ -50,6 +50,7 @@ interface EditorState {
   setCheckRequestId: (requestId: string | null) => void;
   selectCorrection: (correctionId: string | null) => void;
   applyCorrectionById: (correctionId: string, newText: string) => void;
+  applyAITransformation: (selectedText: string, transformedText: string) => void;
   dismissCorrectionById: (correctionId: string) => void;
   setSaving: (isSaving: boolean) => void;
   setLastSaved: (date: Date) => void;
@@ -223,6 +224,50 @@ export const useEditorStore = create<EditorState>()(
           },
           false,
           'applyCorrectionById'
+        );
+      },
+
+      /**
+       * Apply AI transformation by replacing selected text with transformed text
+       */
+      applyAITransformation: (selectedText: string, transformedText: string) => {
+        const { document, corrections } = get();
+        if (!document) return;
+
+        // Find the first occurrence of the selected text in the document
+        const content = document.content;
+        const selectedTextIndex = content.indexOf(selectedText);
+        
+        if (selectedTextIndex === -1) {
+          console.warn('Selected text not found in document content');
+          return;
+        }
+
+        // Replace the selected text with the transformed text
+        const before = content.substring(0, selectedTextIndex);
+        const after = content.substring(selectedTextIndex + selectedText.length);
+        const newContent = before + transformedText + after;
+
+        // Calculate offset adjustment for remaining corrections
+        const offsetDiff = transformedText.length - selectedText.length;
+
+        // Update remaining corrections' offsets that come after the replacement
+        const updatedCorrections = corrections.map(c => ({
+          ...c,
+          offset: c.offset > selectedTextIndex ? c.offset + offsetDiff : c.offset,
+        }));
+
+        set(
+          {
+            document: {
+              ...document,
+              content: newContent,
+            },
+            corrections: updatedCorrections,
+            hasUnsavedChanges: true,
+          },
+          false,
+          'applyAITransformation'
         );
       },
 

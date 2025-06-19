@@ -4,10 +4,10 @@
 
 import { createDocumentAction, getUserDocuments } from '@/lib/actions/documents';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserButton } from '@clerk/nextjs';
 import { PlusIcon } from 'lucide-react';
-import Link from 'next/link';
+import { DocumentCard } from '@/components/shared/document-card';
+import { Toaster } from 'sonner';
 
 export default async function DashboardPage() {
   const documents = await getUserDocuments();
@@ -51,25 +51,15 @@ export default async function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {documents.map((document) => (
-              <Link key={document.id} href={`/editor/${document.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <CardTitle className="line-clamp-1">{document.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {document.content || 'Empty document'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Last updated: {new Date(document.updatedAt).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
+              <DocumentCard
+                key={document.id}
+                document={document}
+              />
             ))}
           </div>
         )}
       </div>
+      <Toaster position="bottom-right" />
     </div>
   );
 } 

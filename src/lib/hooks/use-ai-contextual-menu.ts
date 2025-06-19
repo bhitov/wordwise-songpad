@@ -59,7 +59,7 @@ export function useAIContextualMenu({
   const [currentSelection, setCurrentSelection] = useState<TextSelection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const selectionTimeoutRef = useRef<NodeJS.Timeout>();
+  const selectionTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   /**
    * Close the contextual menu
@@ -106,6 +106,13 @@ export function useAIContextualMenu({
     // Debounce selection handling to avoid flickering
     selectionTimeoutRef.current = setTimeout(() => {
       const selectedText = selection.toString();
+      
+      // Ensure we have at least one range
+      if (selection.rangeCount === 0) {
+        closeMenu();
+        return;
+      }
+      
       const range = selection.getRangeAt(0);
       
       // Create text selection object
@@ -142,7 +149,7 @@ export function useAIContextualMenu({
       setCurrentSelection(textSelection);
       setPosition(menuPosition);
       setIsVisible(true);
-    }, 150); // Small debounce to prevent flickering
+    }, 500); // Half-second delay before showing the menu
   }, [fullText, closeMenu, getMenuActions]);
 
   // Clean up timeout on unmount

@@ -85,8 +85,8 @@ Return ONLY the transformed version, nothing else.`;
     console.log('🎤 AI - Transformation successful:', {
       originalLength: selectedText.length,
       transformedLength: transformedText.length,
-      original: selectedText.substring(0, 50) + '...',
-      transformed: transformedText.substring(0, 50) + '...'
+      original: selectedText,
+      transformed: transformedText
     });
     
     return transformedText;
