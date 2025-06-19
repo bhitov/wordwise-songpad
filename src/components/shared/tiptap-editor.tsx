@@ -10,7 +10,7 @@ import { Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { useEffect, useCallback, useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useEditorStore } from '@/lib/store/editor-store';
 import { Button } from '@/components/ui/button';
@@ -141,6 +141,25 @@ interface TipTapEditorProps {
   className?: string;
   placeholder?: string;
   onSave?: () => void;
+}
+
+function convertNewLinesToBr(content: string) {
+  return content.replaceAll('\n', '<br>');
+}
+
+/**
+ * Ref interface for TipTap editor
+ */
+export interface TipTapEditorRef {
+  editor: ReturnType<typeof useEditor>;
+  getText: () => string;
+  getHTML: () => string;
+  getJSON: () => any;
+  setContent: (content: string) => void;
+  focus: () => void;
+  blur: () => void;
+  getCharacterCount: () => number;
+  getWordCount: () => number;
 }
 
 /**
@@ -342,11 +361,12 @@ function CorrectionPopup({ correction, position, onApply, onDismiss, onClose }: 
 /**
  * TipTap editor component with real-time grammar checking
  */
-export function TipTapEditor({ 
-  className = '', 
-  placeholder = 'Start writing...',
-  onSave 
-}: TipTapEditorProps) {
+export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(
+  function TipTapEditor({ 
+    className = '', 
+    placeholder = 'Start writing...',
+    onSave 
+  }, ref) {
   // Zustand store
   const {
     document,
@@ -370,8 +390,14 @@ export function TipTapEditor({
   } | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
 
+  console.log('in TipTapEditor document is');
+  console.log(document);
+
   // Initialize TipTap editor
   const editor = useEditor({
+    parseOptions: {
+      preserveWhitespace: true,
+    },
     extensions: [
       StarterKit.configure({
         // Disable some extensions we don't need
@@ -391,7 +417,7 @@ export function TipTapEditor({
       }),
       CorrectionHighlight,
     ],
-    content: document?.content || '',
+    content: document?.content.replaceAll('\n', '<br>') || '',
     editorProps: {
       attributes: {
         class: `prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none ${className}`,
@@ -431,10 +457,23 @@ export function TipTapEditor({
     onCreate: ({ editor }) => {
       // Set initial content if document exists
       if (document?.content && editor.getText() !== document.content) {
-        editor.commands.setContent(document.content);
+        editor.commands.setContent(convertNewLinesToBr(document.content));
       }
     },
   });
+
+  // Expose editor methods via ref
+  useImperativeHandle(ref, () => ({
+    editor,
+    getText: () => editor?.getText() || '',
+    getHTML: () => editor?.getHTML() || '',
+    getJSON: () => editor?.getJSON() || {},
+    setContent: (content: string) => editor?.commands.setContent(content),
+    focus: () => editor?.commands.focus(),
+    blur: () => editor?.commands.blur(),
+    getCharacterCount: () => editor?.storage.characterCount?.characters() || 0,
+    getWordCount: () => editor?.storage.characterCount?.words() || 0,
+  }), [editor]);
 
   // Debounce content for grammar checking (1.5 seconds)
   const debouncedContent = useDebounce(document?.content || '', 1500);
@@ -500,7 +539,7 @@ export function TipTapEditor({
       if (currentContent !== document.content) {
         // Preserve cursor position when possible
         const { from } = editor.state.selection;
-        editor.commands.setContent(document.content);
+        editor.commands.setContent(convertNewLinesToBr(document.content));
         
         // Try to restore cursor position
         const newLength = editor.state.doc.content.size;
@@ -649,8 +688,7 @@ export function TipTapEditor({
       )}
     </div>
   );
-}
-
-
+  }
+);
 
 export default TipTapEditor; 

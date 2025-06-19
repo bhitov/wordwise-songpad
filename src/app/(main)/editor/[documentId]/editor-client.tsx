@@ -8,7 +8,7 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEditorStore } from '@/lib/store/editor-store';
-import { TipTapEditor } from '@/components/shared/tiptap-editor';
+import { TipTapEditor, TipTapEditorRef } from '@/components/shared/tiptap-editor';
 import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
 import { GeneratedSongsList, GeneratedSongsListRef } from '@/components/shared/generated-songs-list';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
   // Song generation state
   const [isGeneratingSong, setIsGeneratingSong] = useState(false);
   const songsListRef = useRef<GeneratedSongsListRef>(null);
+  const editorRef = useRef<TipTapEditorRef>(null);
 
   // Debounce content for auto-save (3 seconds)
   const debouncedContent = useDebounce(document?.content || '', 3000);
@@ -255,6 +256,114 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     }
   }, [isEditingTitle]);
 
+  // Expose editor to global scope for testing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).editorDebug = {
+        // Document state
+        document,
+        isLoading,
+        isSaving,
+        hasUnsavedChanges,
+        lastSaved,
+        
+        // Actions
+        performSave,
+        handleGenerateSong,
+        
+        // Refs
+        songsListRef,
+        titleInputRef,
+        editorRef,
+        
+        // Store methods
+        updateTitle,
+        setDocument,
+        
+        // State
+        isGeneratingSong,
+        isEditingTitle,
+        titleValue,
+        
+        // Utility functions
+        refreshSongs: () => songsListRef.current?.refresh(),
+        
+        // TipTap Editor methods
+        editor: editorRef.current?.editor,
+        getText: () => editorRef.current?.getText() || '',
+        getHTML: () => editorRef.current?.getHTML() || '',
+        getJSON: () => editorRef.current?.getJSON() || {},
+        setEditorContent: (content: string) => editorRef.current?.setContent(content),
+        focusEditor: () => editorRef.current?.focus(),
+        blurEditor: () => editorRef.current?.blur(),
+        getCharacterCount: () => editorRef.current?.getCharacterCount() || 0,
+        getWordCount: () => editorRef.current?.getWordCount() || 0,
+        
+        // API helpers for testing
+        testSongGeneration: async () => {
+          console.log('🧪 Testing song generation...');
+          return handleGenerateSong();
+        },
+        
+        testSave: async () => {
+          console.log('🧪 Testing document save...');
+          return performSave();
+        },
+        
+        // Get current editor content
+        getContent: () => document?.content || '',
+        
+        // Set editor content (for testing)
+        setContent: (content: string) => {
+          if (document) {
+            setDocument({
+              ...document,
+              content
+            });
+          }
+        },
+        
+        // Log current state
+        logState: () => {
+          console.log('📊 Editor State:', {
+            documentId: document?.id,
+            title: document?.title,
+            contentLength: document?.content?.length || 0,
+            isLoading,
+            isSaving,
+            hasUnsavedChanges,
+            lastSaved: lastSaved?.toISOString(),
+            isGeneratingSong,
+            isEditingTitle
+          });
+        }
+      };
+      
+      //  console.log('🎯 Editor exposed to window.editorDebug');
+      // console.log('Available methods:', Object.keys((window as any).editorDebug));
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).editorDebug;
+      }
+    };
+  }, [
+    document, 
+    isLoading, 
+    isSaving, 
+    hasUnsavedChanges, 
+    lastSaved, 
+    performSave, 
+    handleGenerateSong, 
+    updateTitle, 
+    setDocument, 
+    isGeneratingSong, 
+    isEditingTitle, 
+    titleValue
+  ]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -413,6 +522,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           </div>
           
           <TipTapEditor
+            ref={editorRef}
             placeholder="Start writing your document..."
             onSave={handleSave}
           />

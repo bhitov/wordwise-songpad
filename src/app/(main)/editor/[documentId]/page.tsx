@@ -25,6 +25,8 @@ export default async function EditorPage({ params }: EditorPageProps) {
 
   // Fetch the document from the database
   const document = await getDocument(documentId);
+  console.log('document received from getDocument');
+  console.log(document);
 
   if (!document) {
     notFound();
