@@ -6,6 +6,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -13,6 +14,121 @@ import { useEffect, useCallback } from 'react';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useEditorStore } from '@/lib/store/editor-store';
 import type { SimplifiedCorrection } from '@/lib/core/checker';
+
+// Extend TipTap types for our custom commands
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    correctionHighlight: {
+      setCorrectionHighlight: (attributes: { correctionId: string; correctionType: string }) => ReturnType;
+      toggleCorrectionHighlight: (attributes: { correctionId: string; correctionType: string }) => ReturnType;
+      unsetCorrectionHighlight: () => ReturnType;
+    };
+  }
+}
+
+/**
+ * Find the position of text in the editor content
+ */
+function findTextPosition(
+  editorText: string, 
+  searchText: string, 
+  offset: number
+): { from: number; to: number } {
+  // Convert character offset to editor position
+  // In TipTap, positions start at 1, not 0
+  const from = offset + 1;
+  const to = from + searchText.length;
+  
+  // Validate the positions are within bounds
+  if (from < 1 || to > editorText.length + 1) {
+    return { from: -1, to: -1 };
+  }
+  
+  return { from, to };
+}
+
+/**
+ * Custom TipTap Mark extension for highlighting corrections
+ */
+const CorrectionHighlight = Mark.create({
+  name: 'correctionHighlight',
+
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+    };
+  },
+
+  addAttributes() {
+    return {
+      correctionId: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-correction-id'),
+        renderHTML: attributes => {
+          if (!attributes.correctionId) {
+            return {};
+          }
+          return {
+            'data-correction-id': attributes.correctionId,
+          };
+        },
+      },
+      correctionType: {
+        default: 'grammar',
+        parseHTML: element => element.getAttribute('data-correction-type'),
+        renderHTML: attributes => {
+          if (!attributes.correctionType) {
+            return {};
+          }
+          return {
+            'data-correction-type': attributes.correctionType,
+          };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'span[data-correction-id]',
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const correctionType = HTMLAttributes['data-correction-type'] || 'grammar';
+    
+    // Define colors that match the sidebar
+    const colorClasses = {
+      grammar: 'bg-blue-100 text-blue-900 border-b-2 border-blue-300 hover:bg-blue-200',
+      spelling: 'bg-red-100 text-red-900 border-b-2 border-red-300 hover:bg-red-200',
+      style: 'bg-purple-100 text-purple-900 border-b-2 border-purple-300 hover:bg-purple-200',
+    };
+
+    return [
+      'span',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        class: `cursor-pointer transition-colors duration-200 ${colorClasses[correctionType as keyof typeof colorClasses] || colorClasses.grammar}`,
+      }),
+      0,
+    ];
+  },
+
+  addCommands() {
+    return {
+      setCorrectionHighlight: (attributes: { correctionId: string; correctionType: string }) => ({ commands }) => {
+        return commands.setMark(this.name, attributes);
+      },
+      toggleCorrectionHighlight: (attributes: { correctionId: string; correctionType: string }) => ({ commands }) => {
+        return commands.toggleMark(this.name, attributes);
+      },
+      unsetCorrectionHighlight: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      },
+    };
+  },
+});
 
 /**
  * Props for the TipTap editor component
@@ -114,11 +230,22 @@ export function TipTapEditor({
       CharacterCount.configure({
         limit: 50000, // Reasonable limit for documents
       }),
+      CorrectionHighlight,
     ],
     content: document?.content || '',
     editorProps: {
       attributes: {
         class: `prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none ${className}`,
+      },
+      handleClick: (view, pos, event) => {
+        // Handle clicks on correction highlights
+        const target = event.target as HTMLElement;
+        const correctionId = target.getAttribute('data-correction-id');
+        if (correctionId) {
+          selectCorrection(selectedCorrectionId === correctionId ? null : correctionId);
+          return true;
+        }
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -207,6 +334,40 @@ export function TipTapEditor({
     }
   }, [editor, document?.content]);
 
+  // Apply correction highlights when corrections change
+  useEffect(() => {
+    if (!editor || !corrections.length) {
+      // Clear all highlights if no corrections
+      if (editor) {
+        editor.commands.unsetCorrectionHighlight();
+      }
+      return;
+    }
+
+    // Clear existing highlights first
+    editor.commands.unsetCorrectionHighlight();
+
+    // Apply new highlights
+    corrections.forEach((correction) => {
+      const { from, to } = findTextPosition(editor.getText(), correction.originalText, correction.offset);
+      
+      if (from !== -1 && to !== -1) {
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from, to })
+          .setCorrectionHighlight({
+            correctionId: correction.id,
+            correctionType: correction.type,
+          })
+          .run();
+      }
+    });
+
+    // Restore selection
+    editor.commands.blur();
+  }, [editor, corrections]);
+
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     // Ctrl/Cmd + S for save
@@ -215,11 +376,6 @@ export function TipTapEditor({
       onSave?.();
     }
   }, [onSave]);
-
-  // Handle correction selection (clicking on underlined text)
-  const handleCorrectionClick = useCallback((correctionId: string) => {
-    selectCorrection(selectedCorrectionId === correctionId ? null : correctionId);
-  }, [selectedCorrectionId, selectCorrection]);
 
   // Clean up editor on unmount
   useEffect(() => {
@@ -263,39 +419,13 @@ export function TipTapEditor({
             className="min-h-[500px] p-6 focus-within:outline-none"
           />
           
-          {/* Correction highlights overlay */}
-          <CorrectionHighlights
-            corrections={corrections}
-            selectedCorrectionId={selectedCorrectionId}
-            onCorrectionClick={handleCorrectionClick}
-            editorElement={editor.view.dom}
-          />
+
         </div>
       </div>
     </div>
   );
 }
 
-/**
- * Component for rendering correction highlights over the editor
- */
-interface CorrectionHighlightsProps {
-  corrections: SimplifiedCorrection[];
-  selectedCorrectionId: string | null;
-  onCorrectionClick: (correctionId: string) => void;
-  editorElement: Element;
-}
 
-function CorrectionHighlights({
-  corrections,
-  selectedCorrectionId,
-  onCorrectionClick,
-  editorElement,
-}: CorrectionHighlightsProps) {
-  // This is a simplified version - in a full implementation,
-  // you'd need to calculate exact positions based on the editor's DOM
-  // For now, we'll rely on the sidebar for correction display
-  return null;
-}
 
 export default TipTapEditor; 
