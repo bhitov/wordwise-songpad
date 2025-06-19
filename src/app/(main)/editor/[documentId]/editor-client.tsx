@@ -254,21 +254,77 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
   const handleAIAction = useCallback(async (actionId: string, selection: TextSelection) => {
     console.log('🤖 AI Action triggered:', { actionId, selection });
     
+    if (!document || !editorRef.current) {
+      toast.error('Editor not ready. Please try again.');
+      return;
+    }
+    
     try {
-      // For now, we'll just show a placeholder message
-      // In the next step, we'll implement the actual OpenAI API call
-      toast.success(`AI Action "${actionId}" triggered for: "${selection.selectedText.substring(0, 50)}..."`);
+      toast.loading('Transforming text with AI...', { id: 'ai-processing' });
       
-      // TODO: Implement actual AI processing
-      // - Call OpenAI API with the selected text
-      // - Get the enhanced/rhyming version
-      // - Replace the selected text in the editor
+      // Call the AI suggestions API with selected text and full document context
+      const response = await fetch('/api/ai/suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: actionId,
+          selectedText: selection.selectedText,
+          fullText: selection.fullText,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'AI processing failed');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success || !data.data?.transformedText) {
+        throw new Error('Invalid response from AI service');
+      }
+
+      const transformedText = data.data.transformedText;
+      
+      console.log('🤖 AI transformation result:', {
+        original: selection.selectedText,
+        transformed: transformedText,
+      });
+
+      // Replace the selected text in the editor
+      const editor = editorRef.current.editor;
+      if (editor) {
+        // Find and replace the selected text
+        const { from, to } = editor.state.selection;
+        
+        editor.chain()
+          .focus()
+          .setTextSelection({ from, to })
+          .insertContent(transformedText)
+          .run();
+        
+        // Update the document content in our store
+        const newContent = editor.getText();
+        setDocument({
+          ...document,
+          content: newContent,
+        });
+        
+        toast.success('Text transformed successfully!', { id: 'ai-processing' });
+      } else {
+        throw new Error('Could not access editor for text replacement');
+      }
       
     } catch (error) {
-      console.error('AI action failed:', error);
-      toast.error('AI action failed. Please try again.');
+      console.error('🤖 AI action failed:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'AI action failed. Please try again.',
+        { id: 'ai-processing' }
+      );
     }
-  }, []);
+  }, [document, setDocument]);
 
   // Focus title input when editing starts
   useEffect(() => {

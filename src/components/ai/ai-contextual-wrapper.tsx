@@ -57,17 +57,21 @@ export function AIContextualWrapper({
     function handleSelectionChange() {
       const selection = window.getSelection();
       
-      // Only handle selections within our wrapper
-      if (selection && wrapperRef.current) {
-        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-        if (range && wrapperRef.current.contains(range.commonAncestorContainer)) {
-          handleSelection(selection);
-        } else {
-          handleSelection(null);
-        }
-      } else {
-        handleSelection(null);
-      }
+             // Only handle selections within our wrapper
+       if (selection && wrapperRef.current) {
+         const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+         if (range && wrapperRef.current.contains(range.commonAncestorContainer)) {
+           console.log('🎯 AI Wrapper - Selection detected:', {
+             text: selection.toString().substring(0, 50) + (selection.toString().length > 50 ? '...' : ''),
+             length: selection.toString().length,
+           });
+           handleSelection(selection);
+         } else {
+           handleSelection(null);
+         }
+       } else {
+         handleSelection(null);
+       }
     }
 
     // Listen for selection changes

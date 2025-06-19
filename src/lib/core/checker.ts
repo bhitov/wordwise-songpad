@@ -89,6 +89,11 @@ export async function checkText(
     // Additional parameters for better checking
     params.append('enabledOnly', 'false');
     params.append('level', 'picky');
+    
+    // Disable whitespace-related rules to avoid annoying corrections for multiple spaces
+    // WHITESPACE_RULE: Detects incorrect whitespace usage
+    // CONSECUTIVE_SPACES: Detects multiple consecutive spaces
+    params.append('disabledRules', 'WHITESPACE_RULE,CONSECUTIVE_SPACES');
 
     const response = await fetch(LANGUAGETOOL_API_URL, {
       method: 'POST',
