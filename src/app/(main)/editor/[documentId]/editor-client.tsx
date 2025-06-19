@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEditorStore } from '@/lib/store/editor-store';
 import { TipTapEditor } from '@/components/shared/tiptap-editor';
 import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
+import { GeneratedSongsList } from '@/components/shared/generated-songs-list';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { 
@@ -18,7 +19,8 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  Music2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -82,6 +84,9 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Song generation state
+  const [isGeneratingSong, setIsGeneratingSong] = useState(false);
 
   // Debounce content for auto-save (3 seconds)
   const debouncedContent = useDebounce(document?.content || '', 3000);
@@ -185,6 +190,56 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     }
     router.push('/dashboard');
   }, [hasUnsavedChanges, router]);
+
+  // Song generation handler
+  const handleGenerateSong = useCallback(async () => {
+    if (!document || !document.content.trim()) {
+      toast.error('Please add some content to your document before generating a song');
+      return;
+    }
+
+    try {
+      setIsGeneratingSong(true);
+      
+      console.log('🎵 UI - Starting song generation for document:', document.id);
+      
+      const response = await fetch('/api/song/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          documentId: document.id,
+          prompt: 'rap, hip-hop, energetic, modern',
+        }),
+      });
+
+      console.log('🎵 UI - Song generation response:', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('🎵 UI - Song generation failed:', errorData);
+        throw new Error(errorData.error || 'Failed to generate song');
+      }
+
+      const data = await response.json();
+      console.log('🎵 UI - Song generation successful:', data);
+      
+      if (data.success) {
+        toast.success(`Song generation started! Task ID: ${data.data.taskId}`);
+      } else {
+        throw new Error(data.error || 'Failed to generate song');
+      }
+    } catch (error) {
+      console.error('🎵 UI - Error generating song:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate song');
+    } finally {
+      setIsGeneratingSong(false);
+    }
+  }, [document]);
 
   // Focus title input when editing starts
   useEffect(() => {
@@ -290,6 +345,22 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
               </div>
             )}
 
+            {/* Generate Song button */}
+            <Button
+              onClick={handleGenerateSong}
+              disabled={isGeneratingSong || !document?.content.trim()}
+              size="sm"
+              variant="default"
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isGeneratingSong ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Music2 className="h-4 w-4 mr-2" />
+              )}
+              {isGeneratingSong ? 'Generating...' : 'Generate Song'}
+            </Button>
+
             {/* Manual save button */}
             <Button
               onClick={handleSave}
@@ -341,8 +412,18 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           />
         </div>
 
-        {/* Suggestions sidebar */}
-        <SuggestionsSidebar />
+        {/* Right sidebar with suggestions and songs */}
+        <div className="w-80 border-l bg-background flex flex-col">
+          {/* Suggestions */}
+          <div className="flex-1 overflow-auto">
+            <SuggestionsSidebar className="w-full border-l-0" />
+          </div>
+          
+          {/* Generated Songs */}
+          <div className="border-t p-4 max-h-96 overflow-auto">
+            <GeneratedSongsList documentId={documentId} />
+          </div>
+        </div>
       </div>
     </div>
   );
