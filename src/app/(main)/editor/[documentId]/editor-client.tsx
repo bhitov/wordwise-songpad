@@ -113,7 +113,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     }
 
     // Only auto-save if content has actually changed and is debounced
-    if (debouncedContent === document.content && debouncedContent.trim()) {
+    if (debouncedContent === document.content && debouncedContent) {
       performSave();
     }
   }, [debouncedContent, document, hasUnsavedChanges, isSaving]);
@@ -339,8 +339,8 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
         }
       };
       
-      //  console.log('🎯 Editor exposed to window.editorDebug');
-      // console.log('Available methods:', Object.keys((window as any).editorDebug));
+      console.log('🎯 Editor exposed to window.editorDebug');
+      console.log('Available methods:', Object.keys((window as any).editorDebug));
     }
     
     // Cleanup on unmount
@@ -463,7 +463,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
             {/* Generate Song button */}
             <Button
               onClick={handleGenerateSong}
-              disabled={isGeneratingSong || !document?.content.trim()}
+              disabled={isGeneratingSong || !document?.content?.trim()}
               size="sm"
               variant="default"
               className="bg-purple-600 hover:bg-purple-700"

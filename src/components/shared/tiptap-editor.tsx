@@ -176,7 +176,7 @@ async function checkTextForCorrections(
   text: string,
   requestId: string
 ): Promise<{ corrections: SimplifiedCorrection[]; requestId: string } | null> {
-  if (!text.trim()) {
+  if (!text || text.length === 0) {
     return { corrections: [], requestId };
   }
 
@@ -187,7 +187,7 @@ async function checkTextForCorrections(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        text: text.trim(),
+        text: text,
         language: 'en-US',
       }),
     });
@@ -400,7 +400,11 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(
     },
     extensions: [
       StarterKit.configure({
-        // Disable some extensions we don't need
+        // Disable ALL formatting extensions to keep only plain text
+        bold: false,
+        italic: false,
+        strike: false,
+        code: false,
         heading: false,
         codeBlock: false,
         blockquote: false,
@@ -505,7 +509,7 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(
 
   // Grammar checking effect for subsequent edits
   useEffect(() => {
-    if (!debouncedContent.trim() || debouncedContent === lastCheckedContent) {
+    if (!debouncedContent || debouncedContent === lastCheckedContent) {
       return;
     }
 
@@ -559,17 +563,21 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(
       return;
     }
 
+    // Preserve current cursor position
+    const currentSelection = editor.state.selection;
+    const wasFocused = editor.isFocused;
+
     // Clear existing highlights first
     editor.commands.unsetCorrectionHighlight();
 
-    // Apply new highlights
+    // Apply new highlights without changing cursor position
     corrections.forEach((correction) => {
       const { from, to } = findTextPosition(editor.getText(), correction.originalText, correction.offset);
       
       if (from !== -1 && to !== -1) {
+        // Apply highlight without changing selection
         editor
           .chain()
-          .focus()
           .setTextSelection({ from, to })
           .setCorrectionHighlight({
             correctionId: correction.id,
@@ -579,8 +587,13 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(
       }
     });
 
-    // Restore selection
-    editor.commands.blur();
+    // Restore original cursor position and focus state
+    if (wasFocused) {
+      editor.commands.setTextSelection(currentSelection);
+      editor.commands.focus();
+    } else {
+      editor.commands.setTextSelection(currentSelection);
+    }
   }, [editor, corrections]);
 
   // Handle popup actions
