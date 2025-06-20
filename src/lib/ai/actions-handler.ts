@@ -109,21 +109,19 @@ export const AI_ACTIONS = {
 } as const;
 
 /**
- * Counts the number of sentences in a text string
+ * Counts the number of non-blank lines in a text string
  * 
  * @param text - Text to analyze
- * @returns Number of sentences found
+ * @returns Number of non-blank lines found
  */
-function countSentences(text: string): number {
+function countLines(text: string): number {
   if (!text.trim()) return 0;
   
-  // Split on sentence-ending punctuation, filter out empty strings
-  const sentences = text
-    .trim()
-    .split(/[.!?]+/)
-    .filter(sentence => sentence.trim().length > 0);
+  // Split text into lines and count non-blank ones
+  const lines = text.split('\n');
+  const nonBlankLines = lines.filter(line => line.trim().length > 0);
   
-  return sentences.length;
+  return nonBlankLines.length;
 }
 
 /**
@@ -182,15 +180,15 @@ export function getAvailableAIActions(selection: TextSelection, genre: Genre = '
     return availableActions;
   }
 
-  // Count sentences and words in the selection
-  const sentenceCount = countSentences(trimmedSelection);
+  // Count lines and words in the selection
+  const lineCount = countLines(trimmedSelection);
   const wordCount = countWords(trimmedSelection);
   
   // Check if selection has multiple words
   const hasMultiWords = hasMultipleWords(trimmedSelection);
 
-  // Rule: "Convert to Lyrics" appears if more than one sentence is selected
-  if (sentenceCount > 1 && hasMultiWords) {
+  // Rule: "Convert to Lyrics" appears if more than 3 lines are selected
+  if (lineCount > 3 && hasMultiWords) {
     availableActions.push(getConvertToLyricsAction(genre));
   }
 
@@ -201,7 +199,7 @@ export function getAvailableAIActions(selection: TextSelection, genre: Genre = '
 
   console.log('🎯 AI Actions Analysis:', {
     selectedText: trimmedSelection.substring(0, 50) + (trimmedSelection.length > 50 ? '...' : ''),
-    sentenceCount,
+    lineCount,
     wordCount,
     hasMultiWords,
     genre,
