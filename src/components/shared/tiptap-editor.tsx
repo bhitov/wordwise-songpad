@@ -340,6 +340,7 @@ function CorrectionPopup({ correction, position, onApply, onDismiss, onClose }: 
             )}
 
             {/* Actions */}
+            {/* TODO: Dismiss button temporarily disabled - highlighting doesn't clear properly when corrections are dismissed
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
@@ -351,6 +352,7 @@ function CorrectionPopup({ correction, position, onApply, onDismiss, onClose }: 
                 Dismiss
               </Button>
             </div>
+            */}
           </div>
         </CardContent>
       </Card>
