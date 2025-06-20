@@ -574,6 +574,18 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     );
   }
 
+  // Show loading if we have initialDocument but haven't processed it yet
+  if (initialDocument && !document) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading document...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!document) {
     return (
       <div className="h-screen flex items-center justify-center">
