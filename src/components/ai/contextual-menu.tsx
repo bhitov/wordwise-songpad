@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Music, Sparkles, TrendingUp, Zap, Loader2 } from 'lucide-react';
 
@@ -124,7 +124,7 @@ export function ContextualMenu({
  */
 function getActionIcon(type: string): React.ReactNode {
   switch (type) {
-    case 'rhyme':
+    case 'convert-to-lyrics':
       return <Music className="h-4 w-4 text-purple-500" />;
     case 'generate':
       return <Sparkles className="h-4 w-4 text-blue-500" />;

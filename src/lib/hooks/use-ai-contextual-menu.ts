@@ -14,10 +14,13 @@ import {
   type TextSelection, 
   type AIAction 
 } from '@/lib/ai/actions-handler';
+import type { Genre } from '@/types';
 
 export interface UseAIContextualMenuProps {
   /** Full document text for context */
   fullText: string;
+  /** Music genre for action labels and descriptions */
+  genre?: Genre;
   /** Callback when an AI action is triggered */
   onAIAction: (actionId: string, selection: TextSelection) => void;
 }
@@ -52,6 +55,7 @@ export interface UseAIContextualMenuReturn {
  */
 export function useAIContextualMenu({
   fullText,
+  genre = 'rap',
   onAIAction,
 }: UseAIContextualMenuProps): UseAIContextualMenuReturn {
   const [isVisible, setIsVisible] = useState(false);
@@ -74,7 +78,7 @@ export function useAIContextualMenu({
    * Get the available actions based on current selection
    */
   const getMenuActions = useCallback((selection: TextSelection): MenuAction[] => {
-    const aiActions = getAvailableAIActions(selection);
+    const aiActions = getAvailableAIActions(selection, genre);
     
     return aiActions.map((action: AIAction): MenuAction => ({
       id: action.id,
@@ -86,7 +90,7 @@ export function useAIContextualMenu({
         onAIAction(action.id, selection);
       },
     }));
-  }, [onAIAction]);
+  }, [onAIAction, genre]);
 
   /**
    * Handle text selection changes

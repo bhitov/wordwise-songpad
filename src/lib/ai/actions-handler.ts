@@ -5,6 +5,8 @@
  * which AI enhancement actions should be available to the user.
  */
 
+import type { Genre } from '@/types';
+
 export interface TextSelection {
   /** The selected text */
   selectedText: string;
@@ -20,18 +22,47 @@ export interface AIAction {
   id: string;
   label: string;
   description: string;
-  type: 'rhyme' | 'generate' | 'enhance';
+  type: 'convert-to-lyrics' | 'generate' | 'enhance';
+}
+
+/**
+ * Get genre-specific label and description for the convert to lyrics action
+ * 
+ * @param genre - The music genre to get labels for
+ * @returns Object with label and description for the genre
+ */
+export function getConvertToLyricsAction(genre: Genre): AIAction {
+  const actions = {
+    rap: {
+      label: 'Make it Rhyme',
+      description: 'Transform the selected text to make it rhyme while preserving meaning'
+    },
+    rock: {
+      label: 'Convert to Rock Lyrics',
+      description: 'Transform the selected text into powerful rock lyrics with energy and attitude'
+    },
+    country: {
+      label: 'Convert to Country Lyrics',
+      description: 'Transform the selected text into heartfelt country lyrics with storytelling'
+    }
+  };
+  
+  return {
+    id: 'convert-to-lyrics',
+    type: 'convert-to-lyrics' as const,
+    ...actions[genre]
+  }
 }
 
 /**
  * Available AI actions that can be performed on text
  */
 export const AI_ACTIONS = {
-  MAKE_IT_RHYME: {
-    id: 'make-it-rhyme',
-    label: 'Make it Rhyme',
-    description: 'Transform the selected text to make it rhyme while preserving meaning',
-    type: 'rhyme' as const,
+  CONVERT_TO_LYRICS: {
+    id: 'convert-to-lyrics',
+    label: 'Convert to Lyrics',
+    description: 'Transform the selected text into lyrics while preserving meaning',
+    type: 'convert-to-lyrics' as const,
   },
   // Future actions can be added here
   // BUILD_LYRICS: {
@@ -81,10 +112,11 @@ function hasMultipleWords(text: string): boolean {
  * Determines which AI actions should be available based on the text selection
  * 
  * @param selection - Information about the selected text and context
+ * @param genre - The music genre to use for action labels and descriptions
  * @returns Array of available AI actions
  */
-export function getAvailableAIActions(selection: TextSelection): AIAction[] {
-  const { selectedText, fullText } = selection;
+export function getAvailableAIActions(selection: TextSelection, genre: Genre = 'rap'): AIAction[] {
+  const { selectedText } = selection;
   const availableActions: AIAction[] = [];
 
   // Normalize the selected text
@@ -101,15 +133,16 @@ export function getAvailableAIActions(selection: TextSelection): AIAction[] {
   // Check if selection has multiple words
   const hasMultiWords = hasMultipleWords(trimmedSelection);
 
-  // Rule: "Make it Rhyme" appears if more than one sentence is selected
+  // Rule: "Convert to Lyrics" appears if more than one sentence is selected
   if (sentenceCount > 1 && hasMultiWords) {
-    availableActions.push(AI_ACTIONS.MAKE_IT_RHYME);
+    availableActions.push(getConvertToLyricsAction(genre));
   }
 
   console.log('🎯 AI Actions Analysis:', {
     selectedText: trimmedSelection.substring(0, 50) + (trimmedSelection.length > 50 ? '...' : ''),
     sentenceCount,
     hasMultiWords,
+    genre,
     availableActions: availableActions.map(a => a.id),
   });
 

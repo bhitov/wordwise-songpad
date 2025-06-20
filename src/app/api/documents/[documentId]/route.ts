@@ -9,13 +9,16 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { documents } from '@/lib/db/schema';
+import { Genre } from '@/types';
 
 /**
  * Request validation schema
  */
 const updateDocumentSchema = z.object({
   title: z.string().min(1, 'Title cannot be empty').max(200, 'Title too long').optional(),
-  content: z.string().max(100000, 'Content too long'),
+  content: z.string().max(100000, 'Content too long').optional(),
+  songGenre: z.enum(['rock', 'rap', 'country'] as const).optional(),
+  songDescription: z.string().max(500, 'Description too long').optional(),
 });
 
 /**
@@ -50,7 +53,7 @@ export async function PUT(
       );
     }
 
-    const { title, content } = validationResult.data;
+    const { title, content, songGenre, songDescription } = validationResult.data;
 
     // Check if document exists and user owns it
     const [existingDocument] = await db
@@ -75,12 +78,23 @@ export async function PUT(
 
     // Update the document
     const updateData: any = {
-      content,
       updatedAt: new Date(),
     };
 
     if (title !== undefined) {
       updateData.title = title;
+    }
+
+    if (content !== undefined) {
+      updateData.content = content;
+    }
+
+    if (songGenre !== undefined) {
+      updateData.songGenre = songGenre;
+    }
+
+    if (songDescription !== undefined) {
+      updateData.songDescription = songDescription;
     }
 
     const [updatedDocument] = await db
@@ -95,6 +109,8 @@ export async function PUT(
         id: updatedDocument.id,
         title: updatedDocument.title,
         content: updatedDocument.content,
+        songGenre: updatedDocument.songGenre,
+        songDescription: updatedDocument.songDescription,
         updatedAt: updatedDocument.updatedAt.toISOString(),
       },
     });
@@ -158,6 +174,8 @@ export async function GET(
         id: document.id,
         title: document.title,
         content: document.content,
+        songGenre: document.songGenre,
+        songDescription: document.songDescription,
         createdAt: document.createdAt.toISOString(),
         updatedAt: document.updatedAt.toISOString(),
       },

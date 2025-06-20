@@ -2,7 +2,7 @@
  * AI Actions Handler Test Script
  * 
  * Tests the AI actions handler to ensure it correctly identifies
- * when to show the "Make it Rhyme" option based on text selection.
+ * when to show the "Convert to Lyrics" option based on text selection.
  */
 
 import { getAvailableAIActions, isValidSelection, type TextSelection } from '../src/lib/ai/actions-handler';
@@ -28,12 +28,12 @@ function testAIActionsHandler() {
       expectedActions: [],
     },
     {
-      name: 'Two sentences selection (should show Make it Rhyme)',
+      name: 'Two sentences selection (should show Convert to Lyrics)',
       selection: {
         selectedText: 'This is the first sentence. This is the second sentence.',
         fullText: 'This is the first sentence. This is the second sentence. This is a third.',
       },
-      expectedActions: ['make-it-rhyme'],
+      expectedActions: ['convert-to-lyrics'],
     },
     {
       name: 'Multiple sentences with punctuation',
@@ -41,7 +41,7 @@ function testAIActionsHandler() {
         selectedText: 'I love to rap! It makes me feel alive.',
         fullText: 'I love to rap! It makes me feel alive. Music is my passion.',
       },
-      expectedActions: ['make-it-rhyme'],
+      expectedActions: ['convert-to-lyrics'],
     },
     {
       name: 'Empty selection',
@@ -65,7 +65,7 @@ function testAIActionsHandler() {
         selectedText: 'First sentence. Second sentence. Third sentence.',
         fullText: 'First sentence. Second sentence. Third sentence. Fourth sentence.',
       },
-      expectedActions: ['make-it-rhyme'],
+      expectedActions: ['convert-to-lyrics'],
     },
     {
       name: 'Partial sentences (no ending punctuation)',

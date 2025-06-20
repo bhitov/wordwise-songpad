@@ -10,12 +10,14 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { documents, songs } from '@/lib/db/schema';
 import { generateSong } from '@/lib/ai/mureka';
+import type { Genre } from '@/types';
 
 /**
  * Request validation schema
  */
 const generateSongSchema = z.object({
   documentId: z.string().min(1, 'Document ID is required'),
+  genre: z.enum(['rap', 'rock', 'country']).optional().default('rap'),
   prompt: z.string().optional(),
   model: z.enum(['auto', 'mureka-5.5', 'mureka-6']).optional(),
 });
@@ -55,8 +57,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { documentId, prompt, model } = validationResult.data;
-    console.log('🎵 Song Generation API - Validated request:', { documentId, prompt, model });
+    const { documentId, genre, prompt, model } = validationResult.data;
+    console.log('🎵 Song Generation API - Validated request:', { documentId, genre, prompt, model });
 
     // Check if document exists and user owns it
     const [document] = await db
@@ -98,14 +100,16 @@ export async function POST(request: NextRequest) {
 
     const songRequest = {
       lyrics: document.content,
+      genre: genre as Genre,
       model: model || 'auto',
-      prompt: 'rap',
+      prompt: prompt, // Will use genre-specific prompt if not provided
     };
 
     console.log('🎵 Song Generation API - Calling Mureka API with:', {
       lyricsLength: songRequest.lyrics.length,
+      genre: songRequest.genre,
       model: songRequest.model,
-      prompt: songRequest.prompt,
+      hasCustomPrompt: !!prompt,
     });
 
     // Generate song using Mureka AI
@@ -124,7 +128,7 @@ export async function POST(request: NextRequest) {
       documentId,
       murekaTaskId: songResponse.id,
       status: songResponse.status,
-      prompt: 'rap',
+      prompt: genre, // Store the genre as the prompt for reference
       model: songResponse.model,
     };
 
@@ -146,6 +150,7 @@ export async function POST(request: NextRequest) {
         id: newSong.id,
         taskId: songResponse.id,
         status: songResponse.status,
+        genre: genre,
         createdAt: newSong.createdAt.toISOString(),
       },
     };

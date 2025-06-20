@@ -11,10 +11,13 @@ import { useEffect, useRef } from 'react';
 import { ContextualMenu, type ContextualMenuAction } from './contextual-menu';
 import { useAIContextualMenu, type MenuAction } from '@/lib/hooks/use-ai-contextual-menu';
 import type { TextSelection } from '@/lib/ai/actions-handler';
+import type { Genre } from '@/types';
 
 export interface AIContextualWrapperProps {
   /** Full document text for context analysis */
   fullText: string;
+  /** Music genre for action labels and descriptions */
+  genre?: Genre;
   /** Callback when an AI action is triggered */
   onAIAction: (actionId: string, selection: TextSelection) => void;
   /** Child components to wrap with AI functionality */
@@ -26,6 +29,7 @@ export interface AIContextualWrapperProps {
  */
 export function AIContextualWrapper({
   fullText,
+  genre,
   onAIAction,
   children,
 }: AIContextualWrapperProps) {
@@ -41,6 +45,7 @@ export function AIContextualWrapper({
     setIsLoading,
   } = useAIContextualMenu({
     fullText,
+    genre,
     onAIAction: async (actionId: string, selection: TextSelection) => {
       try {
         await onAIAction(actionId, selection);

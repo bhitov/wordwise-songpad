@@ -22,6 +22,13 @@
       "when": 1750301760128,
       "tag": "0002_striped_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1750385049403,
+      "tag": "0003_dusty_revanche",
+      "breakpoints": true
     }
   ]
 }

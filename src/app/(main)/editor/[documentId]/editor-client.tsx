@@ -11,10 +11,12 @@ import { useEditorStore } from '@/lib/store/editor-store';
 import { TipTapEditor, TipTapEditorRef } from '@/components/shared/tiptap-editor';
 import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
 import { GeneratedSongsList, GeneratedSongsListRef } from '@/components/shared/generated-songs-list';
+import { SongSettingsPanel } from '@/components/shared/song-settings-panel';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { AIContextualWrapper } from '@/components/ai';
 import type { TextSelection } from '@/lib/ai';
+import type { Genre } from '@/types';
 import { 
   Save, 
   FileText, 
@@ -34,6 +36,8 @@ interface EditorClientProps {
     id: string;
     title: string;
     content: string;
+    songGenre: string;
+    songDescription: string;
     createdAt: string;
     updatedAt: string;
   };
@@ -42,16 +46,23 @@ interface EditorClientProps {
 /**
  * Save document to server
  */
-async function saveDocument(documentId: string, content: string, title: string) {
+async function saveDocument(documentId: string, content: string, title: string, songGenre?: Genre, songDescription?: string) {
+  const body: any = { content, title };
+  
+  if (songGenre !== undefined) {
+    body.songGenre = songGenre;
+  }
+  
+  if (songDescription !== undefined) {
+    body.songDescription = songDescription;
+  }
+
   const response = await fetch(`/api/documents/${documentId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      content,
-      title,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -77,6 +88,8 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     lastSaved,
     setDocument,
     updateTitle,
+    updateSongGenre,
+    updateSongDescription,
     setSaving,
     setLastSaved,
     applyAITransformation,
@@ -103,6 +116,8 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
         id: initialDocument.id,
         title: initialDocument.title,
         content: initialDocument.content,
+        songGenre: (initialDocument.songGenre as Genre) || 'rap',
+        songDescription: initialDocument.songDescription || '',
         createdAt: new Date(initialDocument.createdAt),
         updatedAt: new Date(initialDocument.updatedAt),
       });
@@ -127,7 +142,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
 
     try {
       setSaving(true);
-      await saveDocument(document.id, document.content, document.title);
+      await saveDocument(document.id, document.content, document.title, document.songGenre, document.songDescription);
       setLastSaved(new Date());
       toast.success('Document saved successfully');
     } catch (error) {
@@ -215,7 +230,8 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
         },
         body: JSON.stringify({
           documentId: document.id,
-          prompt: 'rap, hip-hop, energetic, modern',
+          genre: document.songGenre,
+          prompt: document.songDescription || undefined,
         }),
       });
 
@@ -273,6 +289,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           action: actionId,
           selectedText: selection.selectedText,
           fullText: selection.fullText,
+          genre: document.songGenre,
         }),
       });
 
@@ -312,6 +329,8 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
             // Set cursor position to end of transformed text and clear selection
             editor.commands.focus();
             editor.commands.setTextSelection(newCursorPosition);
+            // for some reason this solves race condition issues. don't remove it!
+            editor.commands.insertContent(' ');
           } else {
             // Fallback: just clear selection and focus
             editor.commands.focus();
@@ -576,6 +595,16 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
 
       {/* Main editor area */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Left sidebar with song settings */}
+        <div className="w-72 border-r bg-background p-4 overflow-auto">
+          <SongSettingsPanel
+            songGenre={document.songGenre}
+            songDescription={document.songDescription}
+            onGenreChange={updateSongGenre}
+            onDescriptionChange={updateSongDescription}
+          />
+        </div>
+
         {/* Editor */}
         <div className="flex-1 overflow-auto bg-muted/30">
           {/* Document title aligned with editor */}
@@ -607,6 +636,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           
           <AIContextualWrapper
             fullText={document.content}
+            genre={document.songGenre}
             onAIAction={handleAIAction}
           >
             <TipTapEditor

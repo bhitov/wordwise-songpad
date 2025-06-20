@@ -3,6 +3,8 @@
  * Handles API communication with the Mureka platform for generating music from lyrics.
  */
 
+import type { Genre } from '@/types';
+
 /**
  * Mureka API configuration
  */
@@ -14,10 +16,24 @@ if (!MUREKA_API_KEY) {
 }
 
 /**
+ * Generate genre-specific prompt for Mureka AI
+ */
+function generateGenrePrompt(genre: Genre): string {
+  const prompts = {
+    rap: 'hip-hop, rap, urban, strong beat, rhythmic, modern, male vocal',
+    rock: 'rock, alternative, electric guitar, powerful drums, energetic, anthemic, male vocal',
+    country: 'country, acoustic guitar, storytelling, heartfelt, melodic, warm, male vocal'
+  };
+  
+  return prompts[genre];
+}
+
+/**
  * Song generation request interface
  */
 export interface SongGenerationRequest {
   lyrics: string;
+  genre?: Genre;
   model?: 'auto' | 'mureka-5.5' | 'mureka-6';
   prompt?: string;
   reference_id?: string;
@@ -50,6 +66,17 @@ export async function generateSong(request: SongGenerationRequest): Promise<Song
   }
 
   try {
+    // Use genre to generate appropriate prompt if no custom prompt provided
+    const genre = request.genre || 'rap';
+    const prompt = request.prompt || generateGenrePrompt(genre);
+    
+    console.log('🎵 Mureka - Generating song:', {
+      genre,
+      prompt,
+      lyricsLength: request.lyrics.length,
+      model: request.model || 'auto'
+    });
+
     const response = await fetch(`${MUREKA_API_BASE_URL}/v1/song/generate`, {
       method: 'POST',
       headers: {
@@ -59,7 +86,7 @@ export async function generateSong(request: SongGenerationRequest): Promise<Song
       body: JSON.stringify({
         lyrics: request.lyrics,
         model: request.model || 'auto',
-        prompt: request.prompt,
+        prompt: prompt,
         reference_id: request.reference_id,
         vocal_id: request.vocal_id,
         melody_id: request.melody_id,
@@ -72,9 +99,16 @@ export async function generateSong(request: SongGenerationRequest): Promise<Song
     }
 
     const data = await response.json();
+    
+    console.log('✅ Mureka - Song generation started:', {
+      taskId: data.id,
+      status: data.status,
+      genre
+    });
+    
     return data as SongGenerationResponse;
   } catch (error) {
-    console.error('Error generating song with Mureka AI:', error);
+    console.error('❌ Mureka - Error generating song:', error);
     throw error;
   }
 }

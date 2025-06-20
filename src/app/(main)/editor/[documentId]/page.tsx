@@ -37,6 +37,8 @@ export default async function EditorPage({ params }: EditorPageProps) {
     id: document.id,
     title: document.title,
     content: document.content || '',
+    songGenre: document.songGenre || 'rap',
+    songDescription: document.songDescription || '',
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
   };

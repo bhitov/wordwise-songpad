@@ -1,7 +1,7 @@
 /**
  * AI Suggestions API Route
  * 
- * Handles AI-powered text enhancement requests including "Make it Rhyme"
+ * Handles AI-powered text enhancement requests including "Convert to Lyrics"
  * functionality using OpenAI's GPT models.
  */
 
@@ -9,15 +9,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { makeItRhyme } from '@/lib/ai/openai';
+import type { Genre } from '@/types';
 
 // Request validation schema
-const makeItRhymeSchema = z.object({
-  action: z.literal('make-it-rhyme'),
+const convertToLyricsSchema = z.object({
+  action: z.literal('convert-to-lyrics'),
   selectedText: z.string().min(1, 'Selected text is required'),
   fullText: z.string().optional(),
+  genre: z.enum(['rap', 'rock', 'country']).optional().default('rap'),
 });
 
-type MakeItRhymeRequest = z.infer<typeof makeItRhymeSchema>;
+type ConvertToLyricsRequest = z.infer<typeof convertToLyricsSchema>;
 
 /**
  * POST /api/ai/suggestions
@@ -43,13 +45,14 @@ export async function POST(request: NextRequest) {
       action: body.action,
       selectedTextLength: body.selectedText?.length || 0,
       hasFullText: !!body.fullText,
+      genre: body.genre || 'rap',
     });
 
     // Validate request based on action
-    let validatedData: MakeItRhymeRequest;
+    let validatedData: ConvertToLyricsRequest;
     
     try {
-      validatedData = makeItRhymeSchema.parse(body);
+      validatedData = convertToLyricsSchema.parse(body);
     } catch (error) {
       console.error('🤖 AI Suggestions API - Validation error:', error);
       return NextResponse.json(
@@ -62,10 +65,11 @@ export async function POST(request: NextRequest) {
     let result: string;
     
     switch (validatedData.action) {
-      case 'make-it-rhyme':
+      case 'convert-to-lyrics':
         result = await makeItRhyme(
           validatedData.selectedText, 
-          validatedData.fullText || ''
+          validatedData.fullText || '',
+          validatedData.genre as Genre
         );
         break;
       
@@ -78,6 +82,7 @@ export async function POST(request: NextRequest) {
 
     console.log('🤖 AI Suggestions API - Success:', {
       action: validatedData.action,
+      genre: validatedData.genre,
       originalLength: validatedData.selectedText.length,
       resultLength: result.length,
     });
@@ -86,6 +91,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         action: validatedData.action,
+        genre: validatedData.genre,
         originalText: validatedData.selectedText,
         transformedText: result,
       },

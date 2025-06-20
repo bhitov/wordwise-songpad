@@ -4,14 +4,18 @@
  * Exports all AI-related utilities, handlers, and services for easy importing.
  */
 
-// OpenAI Service
-export { testOpenAIConnection, validateOpenAIConfig } from './openai';
+// Types
+export type { Genre } from '@/types';
+
+// OpenAI Service (now modular)
+export { testOpenAIConnection, validateOpenAIConfig, makeItRhyme, createChatCompletion } from './openai';
 
 // Actions Handler
 export { 
   getAvailableAIActions, 
   isValidSelection, 
   getSelectionContext,
+  getConvertToLyricsAction,
   AI_ACTIONS 
 } from './actions-handler';
 export type { TextSelection, AIAction } from './actions-handler';

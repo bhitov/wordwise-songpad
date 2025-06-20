@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { SimplifiedCorrection } from '@/lib/core/checker';
+import type { Genre } from '@/types';
 
 /**
  * Document state interface
@@ -15,6 +16,8 @@ export interface Document {
   id: string;
   title: string;
   content: string;
+  songGenre: Genre;
+  songDescription: string;
   updatedAt: Date;
   createdAt: Date;
 }
@@ -45,6 +48,8 @@ interface EditorState {
   setDocument: (document: Document) => void;
   updateContent: (content: string) => void;
   updateTitle: (title: string) => void;
+  updateSongGenre: (genre: Genre) => void;
+  updateSongDescription: (description: string) => void;
   setCorrections: (corrections: SimplifiedCorrection[], requestId: string) => void;
   setIsCheckingGrammar: (isChecking: boolean) => void;
   setCheckRequestId: (requestId: string | null) => void;
@@ -140,6 +145,46 @@ export const useEditorStore = create<EditorState>()(
           },
           false,
           'updateTitle'
+        );
+      },
+
+      /**
+       * Update document song genre and mark as having unsaved changes
+       */
+      updateSongGenre: (songGenre: Genre) => {
+        const { document } = get();
+        if (!document) return;
+
+        set(
+          {
+            document: {
+              ...document,
+              songGenre,
+            },
+            hasUnsavedChanges: true,
+          },
+          false,
+          'updateSongGenre'
+        );
+      },
+
+      /**
+       * Update document song description and mark as having unsaved changes
+       */
+      updateSongDescription: (songDescription: string) => {
+        const { document } = get();
+        if (!document) return;
+
+        set(
+          {
+            document: {
+              ...document,
+              songDescription,
+            },
+            hasUnsavedChanges: true,
+          },
+          false,
+          'updateSongDescription'
         );
       },
 

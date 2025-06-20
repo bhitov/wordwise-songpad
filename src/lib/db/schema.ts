@@ -30,6 +30,9 @@ export const documents = pgTable('documents', {
     .references(() => users.id),
   title: text('title').notNull(),
   content: text('content'),
+  contentHtml: text('content_html'),
+  songGenre: varchar('song_genre', { length: 50 }).notNull().default('rap'),
+  songDescription: text('song_description').default(''),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
