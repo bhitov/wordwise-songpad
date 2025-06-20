@@ -2,9 +2,13 @@
 
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, Pause, Download, X } from 'lucide-react'
+import { Play, Pause, Download } from 'lucide-react'
 
-export function SongCard() {
+interface SongCardProps {
+  isEnabled?: boolean
+}
+
+export function SongCard({ isEnabled = false }: SongCardProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -27,21 +31,20 @@ export function SongCard() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 max-w-sm">
+    <div className={`bg-white rounded-lg shadow-lg border border-gray-200 p-6 max-w-sm transition-all duration-300 ${
+      !isEnabled ? 'opacity-50 pointer-events-none grayscale' : ''
+    }`}>
       <audio 
         ref={audioRef}
         src="https://cdn.mureka.ai/cos-prod/open/song/20250620/78858497949697-CNcALGz4ah5UUAR6MUpDAz.mp3"
         onEnded={() => setIsPlaying(false)}
       />
       
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center mb-4">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 text-blue-600">♪</div>
-          <h3 className="font-semibold text-gray-900">Song SongPad rap</h3>
+          <h3 className="font-semibold text-gray-900">SongPad rap</h3>
         </div>
-        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
-          <X className="w-4 h-4" />
-        </Button>
       </div>
 
       <div className="mb-4">
@@ -58,7 +61,8 @@ export function SongCard() {
         <Button 
           onClick={handlePlayPause}
           variant="outline" 
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 w-20"
+          disabled={!isEnabled}
         >
           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           {isPlaying ? 'Pause' : 'Play'}
@@ -68,6 +72,7 @@ export function SongCard() {
           onClick={handleDownload}
           variant="outline" 
           className="flex items-center gap-2"
+          disabled={!isEnabled}
         >
           <Download className="w-4 h-4" />
           Download
