@@ -65,7 +65,7 @@ export async function getUserDocuments() {
 /**
  * Create a new document for the current user.
  */
-export async function createDocument(title: string = 'Untitled Document') {
+export async function createDocument(title: string = 'Untitled Pad') {
   const { userId } = await auth();
 
   if (!userId) {

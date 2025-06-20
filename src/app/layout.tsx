@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "WordWise",
-  description: "A fully functional Grammarly clone with AI-powered features.",
+  title: "SongPad",
+  description: "AI-powered writing assistant for song lyrics",
 };
 
 export default function RootLayout({

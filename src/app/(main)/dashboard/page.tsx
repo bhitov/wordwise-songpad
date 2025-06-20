@@ -18,7 +18,7 @@ export default async function DashboardPage() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">WordWise</h1>
+            <h1 className="text-2xl font-bold">SongPad</h1>
             <UserButton afterSignOutUrl="/" />
           </div>
         </div>
@@ -27,11 +27,11 @@ export default async function DashboardPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold">Your Documents</h2>
+          <h2 className="text-3xl font-bold">Your Pads</h2>
           <form action={createDocumentAction}>
             <Button type="submit" className="flex items-center gap-2">
               <PlusIcon className="h-4 w-4" />
-              New Document
+              New Pad
             </Button>
           </form>
         </div>
@@ -39,12 +39,11 @@ export default async function DashboardPage() {
         {documents.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">
-              You haven't created any documents yet.
+              You haven't created any pads yet.
             </p>
             <form action={createDocumentAction}>
-              <Button type="submit" className="flex items-center gap-2">
-                <PlusIcon className="h-4 w-4" />
-                Create Your First Document
+              <Button type="submit" size="lg">
+                Create Your First Pad
               </Button>
             </form>
           </div>

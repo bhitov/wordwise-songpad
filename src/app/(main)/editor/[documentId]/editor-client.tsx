@@ -147,10 +147,10 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       setSaving(true);
       await saveDocument(document.id, document.content, document.title, document.songGenre, document.songDescription);
       setLastSaved(new Date());
-      toast.success('Document saved successfully');
+      toast.success('Pad saved successfully');
     } catch (error) {
-      console.error('Failed to save document:', error);
-      toast.error('Failed to save document');
+      console.error('Failed to save pad:', error);
+      toast.error('Failed to save pad');
     } finally {
       setSaving(false);
     }
@@ -217,7 +217,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
   // Song generation handler
   const handleGenerateSong = useCallback(async () => {
     if (!document || !document.content.trim()) {
-      toast.error('Please add some content to your document before generating a song');
+      toast.error('Please add some content to your pad before generating a song');
       return;
     }
 
@@ -568,7 +568,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading document...</p>
+          <p className="text-muted-foreground">Loading pad...</p>
         </div>
       </div>
     );
@@ -580,7 +580,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading document...</p>
+          <p className="text-muted-foreground">Loading pad...</p>
         </div>
       </div>
     );
@@ -591,9 +591,9 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Document not found</h2>
+          <h2 className="text-lg font-semibold mb-2">Pad not found</h2>
           <p className="text-muted-foreground mb-4">
-            The document you're looking for doesn't exist or you don't have access to it.
+            The pad you're looking for doesn't exist or you don't have access to it.
           </p>
           <Button onClick={() => window.history.back()}>
             Go Back
@@ -715,7 +715,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
                     onKeyDown={handleTitleKeyDown}
                     onBlur={handleTitleBlur}
                     className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent w-full resize-none"
-                    placeholder="Untitled Document"
+                    placeholder="Untitled Pad"
                     maxLength={200}
                   />
                 ) : (
@@ -724,7 +724,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
                     onClick={handleTitleClick}
                     title="Click to edit title"
                   >
-                    {document.title || 'Untitled Document'}
+                    {document.title || 'Untitled Pad'}
                   </h1>
                 )}
               </div>
@@ -748,7 +748,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           >
             <TipTapEditor
               ref={editorRef}
-              placeholder="Start writing your document..."
+              placeholder="Start writing your pad..."
               onSave={handleSave}
             />
           </AIContextualWrapper>

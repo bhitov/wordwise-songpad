@@ -301,7 +301,7 @@ export function SuggestionsSidebar({ className = '' }: SuggestionsSidebarProps) 
               <div className="h-12 w-12 mx-auto mb-3 flex items-center justify-center">
                 <div className="h-6 w-6 rounded-full bg-blue-500 animate-pulse" />
               </div>
-              <h3 className="font-medium text-lg mb-1">Checking document...</h3>
+              <h3 className="font-medium text-lg mb-1">Checking pad...</h3>
               <p className="text-sm text-muted-foreground">
                 Please wait while we analyze your text.
               </p>
