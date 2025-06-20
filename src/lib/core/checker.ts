@@ -93,7 +93,8 @@ export async function checkText(
     // Disable whitespace-related rules to avoid annoying corrections for multiple spaces
     // WHITESPACE_RULE: Detects incorrect whitespace usage
     // CONSECUTIVE_SPACES: Detects multiple consecutive spaces
-    params.append('disabledRules', 'WHITESPACE_RULE,CONSECUTIVE_SPACES');
+    // COMMA_COMPOUND_SENTENCE: Suggests comma before 'and' in independent clauses (Oxford comma style)
+    params.append('disabledRules', 'WHITESPACE_RULE,CONSECUTIVE_SPACES,COMMA_COMPOUND_SENTENCE');
 
     const response = await fetch(LANGUAGETOOL_API_URL, {
       method: 'POST',

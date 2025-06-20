@@ -174,7 +174,7 @@ function SongCard({ song, onDelete }: { song: Song; onDelete: (songId: string) =
           <div className="flex items-center gap-2 min-w-0 overflow-hidden">
             <Music className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <CardTitle className="text-sm truncate">
-              {song.name ? `Song ${song.name}` : `Song #${song.id.slice(-8)}`}
+              {song.name ? `${song.name}` : `#${song.id.slice(-8)}`}
             </CardTitle>
           </div>
           <Button
