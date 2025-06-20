@@ -293,22 +293,14 @@ export const useEditorStore = create<EditorState>()(
         const after = content.substring(selectedTextIndex + selectedText.length);
         const newContent = before + transformedText + after;
 
-        // Calculate offset adjustment for remaining corrections
-        const offsetDiff = transformedText.length - selectedText.length;
-
-        // Update remaining corrections' offsets that come after the replacement
-        const updatedCorrections = corrections.map(c => ({
-          ...c,
-          offset: c.offset > selectedTextIndex ? c.offset + offsetDiff : c.offset,
-        }));
-
         set(
           {
             document: {
               ...document,
               content: newContent,
             },
-            corrections: updatedCorrections,
+            // clear corrections after applying AI transformation
+            corrections: [],
             hasUnsavedChanges: true,
           },
           false,
