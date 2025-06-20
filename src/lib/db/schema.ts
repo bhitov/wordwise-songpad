@@ -3,7 +3,7 @@
  * @see https://orm.drizzle.team/docs/sql-schema-declaration
  */
 
-import { pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, varchar, boolean } from 'drizzle-orm/pg-core';
 
 /**
  * The `users` table.
@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   id: varchar('id', { length: 255 }).primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
+  tourSeen: boolean('tour_seen').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

@@ -29,8 +29,8 @@ const tourSteps: TourStep[] = [
   },
   {
     target: '.tour-editor',
-    title: 'Main Writing Area',
-    content: 'This is your main writing area. Start typing your lyrics, ideas, or any text you want to transform into songs.',
+    title: 'Smart Writing Area',
+    content: 'Start writing your lyrics here! 💡 Pro tip: Highlight at least 8 words and AI options will pop up to help you make it rhyme, improve flow, or enhance your writing.',
     placement: 'top',
   },
   {
@@ -150,6 +150,7 @@ export function EditorTour({ className }: EditorTourProps) {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [hasCheckedTourStatus, setHasCheckedTourStatus] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const handleStartTour = useCallback(() => {
@@ -157,9 +158,21 @@ export function EditorTour({ className }: EditorTourProps) {
     setCurrentStep(0);
   }, []);
 
-  const handleCloseTour = useCallback(() => {
+  const handleCloseTour = useCallback(async () => {
     setIsActive(false);
     setCurrentStep(0);
+    
+    // Mark tour as seen when user closes it
+    try {
+      await fetch('/api/user/tour-seen', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to mark tour as seen:', error);
+    }
   }, []);
 
   const handleNext = useCallback(() => {
@@ -252,6 +265,35 @@ export function EditorTour({ className }: EditorTourProps) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isActive, handleCloseTour, handleNext, handlePrev]);
+
+  // Check tour status on component mount and auto-start if needed
+  useEffect(() => {
+    if (hasCheckedTourStatus) return;
+
+    const checkTourStatus = async () => {
+      try {
+        const response = await fetch('/api/user/tour-seen');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // If user hasn't seen the tour, start it automatically
+          if (!data.tourSeen) {
+            // Small delay to ensure page elements are rendered
+            setTimeout(() => {
+              setIsActive(true);
+              setCurrentStep(0);
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check tour status:', error);
+      } finally {
+        setHasCheckedTourStatus(true);
+      }
+    };
+
+    checkTourStatus();
+  }, [hasCheckedTourStatus]);
 
 
 

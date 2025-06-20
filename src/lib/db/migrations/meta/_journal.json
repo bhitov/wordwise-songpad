@@ -50,6 +50,13 @@
       "when": 1750439861375,
       "tag": "0006_nasty_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1750448105412,
+      "tag": "0007_deep_menace",
+      "breakpoints": true
     }
   ]
 }
