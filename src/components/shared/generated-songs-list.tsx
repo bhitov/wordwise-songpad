@@ -170,44 +170,46 @@ function SongCard({ song, onDelete }: { song: Song; onDelete: (songId: string) =
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Music className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-sm">
+        <div className="grid grid-cols-[1fr_auto] gap-2 items-start w-full">
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <Music className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <CardTitle className="text-sm truncate">
               {song.name ? `Song ${song.name}` : `Song #${song.id.slice(-8)}`}
             </CardTitle>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={statusInfo.variant} className="flex items-center gap-1">
-              <StatusIcon 
-                className={`h-3 w-3 ${statusInfo.color} ${
-                  song.status === 'preparing' || song.status === 'queued' || song.status === 'running' 
-                    ? 'animate-spin' 
-                    : ''
-                }`} 
-              />
-              {statusInfo.label}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <XCircle className="h-3 w-3" />
-              )}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <XCircle className="h-3 w-3" />
+            )}
+          </Button>
         </div>
+        
         {song.prompt && (
-          <CardDescription className="text-xs">
+          <CardDescription className="text-xs mt-2">
             Style: {song.prompt}
           </CardDescription>
         )}
+        
+        <div className="mt-1">
+          <Badge variant={statusInfo.variant} className="flex items-center gap-1 w-fit">
+            <StatusIcon 
+              className={`h-3 w-3 ${statusInfo.color} ${
+                song.status === 'preparing' || song.status === 'queued' || song.status === 'running' 
+                  ? 'animate-spin' 
+                  : ''
+              }`} 
+            />
+            {statusInfo.label}
+          </Badge>
+        </div>
       </CardHeader>
 
       <CardContent className="pt-0">
