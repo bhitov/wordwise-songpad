@@ -154,7 +154,7 @@ function SuggestionCard({
                   Suggestions:
                 </p>
                 <div className="space-y-1">
-                  {correction.suggestions.map((suggestion, index) => (
+                  {correction.suggestions.slice(0, 3).map((suggestion, index) => (
                     <Button
                       key={index}
                       variant="outline"
@@ -169,6 +169,11 @@ function SuggestionCard({
                       <span className="flex-1">"{suggestion}"</span>
                     </Button>
                   ))}
+                  {correction.suggestions.length > 3 && (
+                    <p className="text-xs text-muted-foreground text-center py-1">
+                      +{correction.suggestions.length - 3} more suggestions
+                    </p>
+                  )}
                 </div>
               </div>
             )}
