@@ -595,14 +595,21 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
 
       {/* Main editor area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left sidebar with song settings */}
-        <div className="w-72 border-r bg-background p-4 overflow-auto">
-          <SongSettingsPanel
-            songGenre={document.songGenre}
-            songDescription={document.songDescription}
-            onGenreChange={updateSongGenre}
-            onDescriptionChange={updateSongDescription}
-          />
+        {/* Left sidebar with song settings and generated songs */}
+        <div className="w-72 border-r bg-background flex flex-col overflow-hidden">
+          <div className="p-4 flex-shrink-0">
+            <SongSettingsPanel
+              songGenre={document.songGenre}
+              songDescription={document.songDescription}
+              onGenreChange={updateSongGenre}
+              onDescriptionChange={updateSongDescription}
+            />
+          </div>
+          
+          {/* Generated Songs */}
+          <div className="flex-1 border-t p-4 overflow-auto">
+            <GeneratedSongsList ref={songsListRef} documentId={documentId} />
+          </div>
         </div>
 
         {/* Editor */}
@@ -647,17 +654,9 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           </AIContextualWrapper>
         </div>
 
-        {/* Right sidebar with suggestions and songs */}
-        <div className="w-80 border-l bg-background flex flex-col">
-          {/* Suggestions */}
-          <div className="flex-1 overflow-auto">
-            <SuggestionsSidebar className="w-full border-l-0" />
-          </div>
-          
-          {/* Generated Songs */}
-          <div className="border-t p-4 max-h-96 overflow-auto">
-            <GeneratedSongsList ref={songsListRef} documentId={documentId} />
-          </div>
+        {/* Right sidebar with suggestions */}
+        <div className="w-80 border-l bg-background">
+          <SuggestionsSidebar className="w-full border-l-0" />
         </div>
       </div>
     </div>
