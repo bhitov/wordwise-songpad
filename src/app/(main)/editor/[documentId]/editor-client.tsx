@@ -13,6 +13,7 @@ import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
 import { GeneratedSongsList, GeneratedSongsListRef } from '@/components/shared/generated-songs-list';
 import { SongSettingsPanel } from '@/components/shared/song-settings-panel';
 import { AIActionsDropdown } from '@/components/shared/ai-actions-dropdown';
+import { EditorTour } from '@/components/shared/editor-tour';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { AIContextualWrapper } from '@/components/ai';
@@ -633,6 +634,9 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Tour button */}
+            <EditorTour />
+
             {/* Save status indicator */}
             {isSaving ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -657,7 +661,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
               disabled={isGeneratingSong || !document?.content?.trim()}
               size="sm"
               variant="default"
-              className="bg-purple-600 hover:bg-purple-700"
+              className="tour-generate-song bg-purple-600 hover:bg-purple-700"
             >
               {isGeneratingSong ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -685,7 +689,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left sidebar with song settings and generated songs */}
         <div className="w-72 border-r bg-background flex flex-col overflow-hidden">
-          <div className="p-4 flex-shrink-0">
+          <div className="tour-song-settings p-4 flex-shrink-0">
             <SongSettingsPanel
               songGenre={document.songGenre}
               songDescription={document.songDescription}
@@ -695,7 +699,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
           </div>
           
           {/* Generated Songs */}
-          <div className="flex-1 border-t p-4 overflow-auto">
+          <div className="tour-generated-songs flex-1 border-t p-4 overflow-auto">
             <GeneratedSongsList ref={songsListRef} documentId={documentId} />
           </div>
         </div>
@@ -720,7 +724,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
                   />
                 ) : (
                   <h1 
-                    className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent cursor-text hover:bg-muted/50 rounded px-1 py-1 -mx-1 transition-colors"
+                    className="tour-title font-semibold text-2xl text-foreground border-none outline-none bg-transparent cursor-text hover:bg-muted/50 rounded px-1 py-1 -mx-1 transition-colors"
                     onClick={handleTitleClick}
                     title="Click to edit title"
                   >
@@ -730,7 +734,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
               </div>
               
               {/* AI Actions Dropdown */}
-              <div className="ml-4">
+              <div className="tour-ai-actions ml-4">
                 <AIActionsDropdown
                   content={document.content}
                   genre={document.songGenre}
@@ -746,16 +750,18 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
             genre={document.songGenre}
             onAIAction={handleAIAction}
           >
-            <TipTapEditor
-              ref={editorRef}
-              placeholder="Start writing your pad..."
-              onSave={handleSave}
-            />
+            <div className="tour-editor">
+              <TipTapEditor
+                ref={editorRef}
+                placeholder="Start writing your pad..."
+                onSave={handleSave}
+              />
+            </div>
           </AIContextualWrapper>
         </div>
 
         {/* Right sidebar with suggestions */}
-        <div className="w-80 border-l bg-background">
+        <div className="tour-suggestions w-80 border-l bg-background">
           <SuggestionsSidebar className="w-full border-l-0" />
         </div>
       </div>
