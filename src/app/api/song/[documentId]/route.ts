@@ -58,6 +58,7 @@ export async function GET(
     const documentSongs = await db
       .select({
         id: songs.id,
+        name: songs.name,
         status: songs.status,
         songUrl: songs.songUrl,
         failedReason: songs.failedReason,
@@ -199,6 +200,7 @@ export async function GET(
       success: true,
       data: updatedSongs.map(song => ({
         id: song.id,
+        name: song.name,
         status: song.status,
         songUrl: song.songUrl,
         failedReason: song.failedReason,

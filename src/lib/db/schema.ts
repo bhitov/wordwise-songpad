@@ -46,6 +46,7 @@ export const songs = pgTable('songs', {
   documentId: varchar('document_id', { length: 255 })
     .notNull()
     .references(() => documents.id, { onDelete: 'cascade' }),
+  name: text('name'),
   murekaTaskId: varchar('mureka_task_id', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('preparing'),
   songUrl: text('song_url'),

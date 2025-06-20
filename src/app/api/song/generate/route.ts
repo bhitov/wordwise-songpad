@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
     const songData = {
       id: songId,
       documentId,
+      name: document.title, // Store document title at time of song creation
       murekaTaskId: songResponse.id,
       status: songResponse.status,
       prompt: genre, // Store the genre as the prompt for reference

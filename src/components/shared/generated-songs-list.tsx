@@ -27,6 +27,7 @@ import { toast } from 'sonner';
  */
 interface Song {
   id: string;
+  name?: string; // Document title at time of song creation
   status: 'preparing' | 'queued' | 'running' | 'succeeded' | 'failed' | 'timeouted' | 'cancelled';
   songUrl?: string;
   failedReason?: string;
@@ -93,9 +94,10 @@ function getStatusInfo(status: Song['status']) {
 /**
  * Individual song card component
  */
-function SongCard({ song }: { song: Song }) {
+function SongCard({ song, onDelete }: { song: Song; onDelete: (songId: string) => void }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const statusInfo = getStatusInfo(song.status);
   const StatusIcon = statusInfo.icon;
@@ -148,6 +150,23 @@ function SongCard({ song }: { song: Song }) {
     document.body.removeChild(link);
   }, [song.songUrl, song.id]);
 
+  const handleDelete = useCallback(async () => {
+    if (isDeleting) return;
+    
+    const confirmed = window.confirm('Are you sure you want to delete this song? This action cannot be undone.');
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await onDelete(song.id);
+    } catch (error) {
+      console.error('Failed to delete song:', error);
+      toast.error('Failed to delete song');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [song.id, onDelete, isDeleting]);
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
@@ -155,19 +174,34 @@ function SongCard({ song }: { song: Song }) {
           <div className="flex items-center gap-2">
             <Music className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm">
-              Song #{song.id.slice(-8)}
+              {song.name ? `Song ${song.name}` : `Song #${song.id.slice(-8)}`}
             </CardTitle>
           </div>
-          <Badge variant={statusInfo.variant} className="flex items-center gap-1">
-            <StatusIcon 
-              className={`h-3 w-3 ${statusInfo.color} ${
-                song.status === 'preparing' || song.status === 'queued' || song.status === 'running' 
-                  ? 'animate-spin' 
-                  : ''
-              }`} 
-            />
-            {statusInfo.label}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={statusInfo.variant} className="flex items-center gap-1">
+              <StatusIcon 
+                className={`h-3 w-3 ${statusInfo.color} ${
+                  song.status === 'preparing' || song.status === 'queued' || song.status === 'running' 
+                    ? 'animate-spin' 
+                    : ''
+                }`} 
+              />
+              {statusInfo.label}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <XCircle className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
         </div>
         {song.prompt && (
           <CardDescription className="text-xs">
@@ -265,6 +299,32 @@ export const GeneratedSongsList = forwardRef<GeneratedSongsListRef, GeneratedSon
     refresh: fetchSongs
   }), [fetchSongs]);
 
+  // Delete song function
+  const deleteSong = useCallback(async (songId: string) => {
+    try {
+      console.log('🗑️ Deleting song:', songId);
+      
+      const response = await fetch(`/api/song/${documentId}/${songId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete song');
+      }
+
+      console.log('🗑️ Song deleted successfully:', songId);
+      toast.success('Song deleted successfully');
+      
+      // Remove the song from local state immediately for better UX
+      setSongs(prevSongs => prevSongs.filter(song => song.id !== songId));
+      
+    } catch (error) {
+      console.error('🗑️ Error deleting song:', error);
+      throw error; // Re-throw so SongCard can handle the error
+    }
+  }, [documentId]);
+
   // Initial fetch
   useEffect(() => {
     fetchSongs();
@@ -343,7 +403,7 @@ export const GeneratedSongsList = forwardRef<GeneratedSongsListRef, GeneratedSon
       
       <div className="space-y-3">
         {songs.map((song) => (
-          <SongCard key={song.id} song={song} />
+          <SongCard key={song.id} song={song} onDelete={deleteSong} />
         ))}
       </div>
     </div>
