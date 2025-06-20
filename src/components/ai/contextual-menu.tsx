@@ -126,6 +126,8 @@ function getActionIcon(type: string): React.ReactNode {
   switch (type) {
     case 'convert-to-lyrics':
       return <Music className="h-4 w-4 text-purple-500" />;
+    case 'generate-verses':
+      return <Sparkles className="h-4 w-4 text-blue-500" />;
     case 'generate':
       return <Sparkles className="h-4 w-4 text-blue-500" />;
     case 'enhance':

@@ -8,10 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
-import { makeItRhyme } from '@/lib/ai/openai';
+import { makeItRhyme, generateVersesFromDescription } from '@/lib/ai/openai';
 import type { Genre } from '@/types';
 
-// Request validation schema
+// Request validation schemas
 const convertToLyricsSchema = z.object({
   action: z.literal('convert-to-lyrics'),
   selectedText: z.string().min(1, 'Selected text is required'),
@@ -19,7 +19,16 @@ const convertToLyricsSchema = z.object({
   genre: z.enum(['rap', 'rock', 'country']).optional().default('rap'),
 });
 
-type ConvertToLyricsRequest = z.infer<typeof convertToLyricsSchema>;
+const generateVersesSchema = z.object({
+  action: z.literal('generate-verses'),
+  selectedText: z.string().min(1, 'Description text is required'),
+  fullText: z.string().optional(),
+  genre: z.enum(['rap', 'rock', 'country']).optional().default('rap'),
+});
+
+const aiSuggestionsSchema = z.union([convertToLyricsSchema, generateVersesSchema]);
+
+type AIRequest = z.infer<typeof aiSuggestionsSchema>;
 
 /**
  * POST /api/ai/suggestions
@@ -49,10 +58,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Validate request based on action
-    let validatedData: ConvertToLyricsRequest;
+    let validatedData: AIRequest;
     
     try {
-      validatedData = convertToLyricsSchema.parse(body);
+      validatedData = aiSuggestionsSchema.parse(body);
     } catch (error) {
       console.error('🤖 AI Suggestions API - Validation error:', error);
       return NextResponse.json(
@@ -68,6 +77,14 @@ export async function POST(request: NextRequest) {
       case 'convert-to-lyrics':
         result = await makeItRhyme(
           validatedData.selectedText, 
+          validatedData.fullText || '',
+          validatedData.genre as Genre
+        );
+        break;
+      
+      case 'generate-verses':
+        result = await generateVersesFromDescription(
+          validatedData.selectedText,
           validatedData.fullText || '',
           validatedData.genre as Genre
         );

@@ -33,7 +33,7 @@ function testAIActionsHandler() {
         selectedText: 'This is the first sentence. This is the second sentence.',
         fullText: 'This is the first sentence. This is the second sentence. This is a third.',
       },
-      expectedActions: ['convert-to-lyrics'],
+      expectedActions: ['convert-to-lyrics', 'generate-verses'], // 10 words + 2 sentences = both actions
     },
     {
       name: 'Multiple sentences with punctuation',
@@ -41,7 +41,7 @@ function testAIActionsHandler() {
         selectedText: 'I love to rap! It makes me feel alive.',
         fullText: 'I love to rap! It makes me feel alive. Music is my passion.',
       },
-      expectedActions: ['convert-to-lyrics'],
+      expectedActions: ['convert-to-lyrics', 'generate-verses'], // 9 words + 2 sentences = both actions
     },
     {
       name: 'Empty selection',
@@ -72,6 +72,30 @@ function testAIActionsHandler() {
       selection: {
         selectedText: 'This is incomplete and this is also incomplete',
         fullText: 'This is incomplete and this is also incomplete. Complete sentence here.',
+      },
+      expectedActions: ['generate-verses'], // 8+ words qualifies for generate verses
+    },
+    {
+      name: 'Eight words exactly - should trigger generate verses',
+      selection: {
+        selectedText: 'A story about love and heartbreak in the city',
+        fullText: 'A story about love and heartbreak in the city. More content here.',
+      },
+      expectedActions: ['generate-verses'],
+    },
+    {
+      name: 'Long description - should trigger both actions',
+      selection: {
+        selectedText: 'This is a long description about overcoming challenges. It contains multiple sentences and many words.',
+        fullText: 'This is a long description about overcoming challenges. It contains multiple sentences and many words. Additional context here.',
+      },
+      expectedActions: ['convert-to-lyrics', 'generate-verses'],
+    },
+    {
+      name: 'Seven words only - should not trigger generate verses',
+      selection: {
+        selectedText: 'Short description with only seven words exactly',
+        fullText: 'Short description with only seven words exactly. More text.',
       },
       expectedActions: [],
     },

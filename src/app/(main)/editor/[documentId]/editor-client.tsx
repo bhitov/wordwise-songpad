@@ -12,6 +12,7 @@ import { TipTapEditor, TipTapEditorRef } from '@/components/shared/tiptap-editor
 import { SuggestionsSidebar } from '@/components/shared/suggestions-sidebar';
 import { GeneratedSongsList, GeneratedSongsListRef } from '@/components/shared/generated-songs-list';
 import { SongSettingsPanel } from '@/components/shared/song-settings-panel';
+import { AIActionsDropdown } from '@/components/shared/ai-actions-dropdown';
 import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { AIContextualWrapper } from '@/components/ai';
@@ -47,7 +48,7 @@ interface EditorClientProps {
  * Save document to server
  */
 async function saveDocument(documentId: string, content: string, title: string, songGenre?: Genre, songDescription?: string) {
-  const body: any = { content, title };
+  const body: { content: string; title: string; songGenre?: Genre; songDescription?: string } = { content, title };
   
   if (songGenre !== undefined) {
     body.songGenre = songGenre;
@@ -103,6 +104,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
 
   // Song generation state
   const [isGeneratingSong, setIsGeneratingSong] = useState(false);
+  const [isProcessingAIAction, setIsProcessingAIAction] = useState(false);
   const songsListRef = useRef<GeneratedSongsListRef>(null);
   const editorRef = useRef<TipTapEditorRef>(null);
 
@@ -134,6 +136,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     if (debouncedContent === document.content && debouncedContent) {
       performSave();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedContent, document, hasUnsavedChanges, isSaving]);
 
   // Manual save function
@@ -267,6 +270,79 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
     }
   }, [document]);
 
+  // Whole-text AI action handler
+  const handleWholeTextAIAction = useCallback(async (
+    actionType: 'generate-chorus' | 'add-verse', 
+    content: string, 
+    genre: Genre
+  ) => {
+    if (!document || !editorRef.current) {
+      toast.error('Editor not ready. Please try again.');
+      return;
+    }
+
+    try {
+      setIsProcessingAIAction(true);
+      toast.loading(`${actionType === 'generate-chorus' ? 'Generating chorus' : 'Adding verse'}...`, { id: 'ai-whole-text' });
+
+      // Call the whole-text AI API
+      const response = await fetch('/api/ai/whole-text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: actionType,
+          fullText: content,
+          genre: genre,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'AI processing failed');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success || !data.data?.enhancedText) {
+        throw new Error('Invalid response from AI service');
+      }
+
+      const enhancedText = data.data.enhancedText;
+      
+      console.log('🤖 Whole-text AI result:', {
+        action: actionType,
+        originalLength: content.length,
+        enhancedLength: enhancedText.length,
+        genre
+      });
+
+      // Update the editor content with the enhanced text
+      if (editorRef.current?.editor) {
+        editorRef.current.editor.commands.setContent(enhancedText);
+      }
+      
+      // Update the store with the new content
+      const { updateContent } = useEditorStore.getState();
+      updateContent(enhancedText);
+
+      toast.success(
+        actionType === 'generate-chorus' ? 'Chorus generated successfully!' : 'Verse added successfully!',
+        { id: 'ai-whole-text' }
+      );
+
+    } catch (error) {
+      console.error('🤖 Whole-text AI action failed:', error);
+      toast.error(
+        error instanceof Error ? error.message : `Failed to ${actionType === 'generate-chorus' ? 'generate chorus' : 'add verse'}`,
+        { id: 'ai-whole-text' }
+      );
+    } finally {
+      setIsProcessingAIAction(false);
+    }
+  }, [document]);
+
   // AI action handler
   const handleAIAction = useCallback(async (actionId: string, selection: TextSelection) => {
     console.log('🤖 AI Action triggered:', { actionId, selection });
@@ -362,7 +438,7 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
   // Expose editor to global scope for testing
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).editorDebug = {
+      (window as typeof window & { editorDebug: any }).editorDebug = {
         // Document state
         document,
         isLoading,
@@ -614,30 +690,42 @@ export function EditorClient({ initialDocument }: EditorClientProps) {
 
         {/* Editor */}
         <div className="flex-1 overflow-auto bg-muted/30">
-          {/* Document title aligned with editor */}
+          {/* Document title and AI actions */}
           <div className="max-w-4xl mx-auto p-6">
-            <div className="mb-4">
-              {isEditingTitle ? (
-                <input
-                  ref={titleInputRef}
-                  type="text"
-                  value={titleValue}
-                  onChange={(e) => setTitleValue(e.target.value)}
-                  onKeyDown={handleTitleKeyDown}
-                  onBlur={handleTitleBlur}
-                  className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent w-full resize-none"
-                  placeholder="Untitled Document"
-                  maxLength={200}
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex-1">
+                {isEditingTitle ? (
+                  <input
+                    ref={titleInputRef}
+                    type="text"
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    onKeyDown={handleTitleKeyDown}
+                    onBlur={handleTitleBlur}
+                    className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent w-full resize-none"
+                    placeholder="Untitled Document"
+                    maxLength={200}
+                  />
+                ) : (
+                  <h1 
+                    className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent cursor-text hover:bg-muted/50 rounded px-1 py-1 -mx-1 transition-colors"
+                    onClick={handleTitleClick}
+                    title="Click to edit title"
+                  >
+                    {document.title || 'Untitled Document'}
+                  </h1>
+                )}
+              </div>
+              
+              {/* AI Actions Dropdown */}
+              <div className="ml-4">
+                <AIActionsDropdown
+                  content={document.content}
+                  genre={document.songGenre}
+                  onAIAction={handleWholeTextAIAction}
+                  isLoading={isProcessingAIAction}
                 />
-              ) : (
-                <h1 
-                  className="font-semibold text-2xl text-foreground border-none outline-none bg-transparent cursor-text hover:bg-muted/50 rounded px-1 py-1 -mx-1 transition-colors"
-                  onClick={handleTitleClick}
-                  title="Click to edit title"
-                >
-                  {document.title || 'Untitled Document'}
-                </h1>
-              )}
+              </div>
             </div>
           </div>
           

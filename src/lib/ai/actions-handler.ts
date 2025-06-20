@@ -22,7 +22,7 @@ export interface AIAction {
   id: string;
   label: string;
   description: string;
-  type: 'convert-to-lyrics' | 'generate' | 'enhance';
+  type: 'convert-to-lyrics' | 'generate-verses' | 'generate' | 'enhance';
 }
 
 /**
@@ -50,6 +50,35 @@ export function getConvertToLyricsAction(genre: Genre): AIAction {
   return {
     id: 'convert-to-lyrics',
     type: 'convert-to-lyrics' as const,
+    ...actions[genre]
+  }
+}
+
+/**
+ * Get genre-specific label and description for the generate verses action
+ * 
+ * @param genre - The music genre to get labels for
+ * @returns Object with label and description for the genre
+ */
+export function getGenerateVersesAction(genre: Genre): AIAction {
+  const actions = {
+    rap: {
+      label: 'Generate Rap Verses',
+      description: 'Create rap verses based on the selected description'
+    },
+    rock: {
+      label: 'Generate Rock Verses',
+      description: 'Create powerful rock verses based on the selected description'
+    },
+    country: {
+      label: 'Generate Country Verses',
+      description: 'Create storytelling country verses based on the selected description'
+    }
+  };
+  
+  return {
+    id: 'generate-verses',
+    type: 'generate-verses' as const,
     ...actions[genre]
   }
 }
@@ -109,6 +138,32 @@ function hasMultipleWords(text: string): boolean {
 }
 
 /**
+ * Counts the number of words in a text string
+ * 
+ * @param text - Text to analyze
+ * @returns Number of words found
+ */
+function countWords(text: string): number {
+  if (!text.trim()) return 0;
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+  return words.length;
+}
+
+/**
+ * Estimates if the document already has a good amount of song content
+ * 
+ * @param fullText - The complete document text
+ * @returns True if document appears to have substantial song content
+ */
+function hasSubstantialSongContent(fullText: string): boolean {
+  const wordCount = countWords(fullText);
+  const lineCount = fullText.split('\n').filter(line => line.trim().length > 0).length;
+  
+  // Consider substantial if more than 100 words or more than 8 lines
+  return wordCount > 100 || lineCount > 8;
+}
+
+/**
  * Determines which AI actions should be available based on the text selection
  * 
  * @param selection - Information about the selected text and context
@@ -116,7 +171,7 @@ function hasMultipleWords(text: string): boolean {
  * @returns Array of available AI actions
  */
 export function getAvailableAIActions(selection: TextSelection, genre: Genre = 'rap'): AIAction[] {
-  const { selectedText } = selection;
+  const { selectedText, fullText } = selection;
   const availableActions: AIAction[] = [];
 
   // Normalize the selected text
@@ -127,8 +182,9 @@ export function getAvailableAIActions(selection: TextSelection, genre: Genre = '
     return availableActions;
   }
 
-  // Count sentences in the selection
+  // Count sentences and words in the selection
   const sentenceCount = countSentences(trimmedSelection);
+  const wordCount = countWords(trimmedSelection);
   
   // Check if selection has multiple words
   const hasMultiWords = hasMultipleWords(trimmedSelection);
@@ -138,9 +194,15 @@ export function getAvailableAIActions(selection: TextSelection, genre: Genre = '
     availableActions.push(getConvertToLyricsAction(genre));
   }
 
+  // Rule: "Generate Verses" appears if at least 8 words are selected
+  if (wordCount >= 8) {
+    availableActions.push(getGenerateVersesAction(genre));
+  }
+
   console.log('🎯 AI Actions Analysis:', {
     selectedText: trimmedSelection.substring(0, 50) + (trimmedSelection.length > 50 ? '...' : ''),
     sentenceCount,
+    wordCount,
     hasMultiWords,
     genre,
     availableActions: availableActions.map(a => a.id),

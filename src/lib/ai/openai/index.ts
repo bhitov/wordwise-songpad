@@ -9,4 +9,5 @@
 export { createChatCompletion, testOpenAIConnection, validateOpenAIConfig } from './client';
 
 // Export AI features
-export { makeItRhyme } from './make-it-rhyme'; 
+export { makeItRhyme } from './make-it-rhyme';
+export { generateChorus, addVerse, generateVersesFromDescription } from './song-enhancement'; 

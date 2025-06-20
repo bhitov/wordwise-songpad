@@ -16,6 +16,7 @@ export {
   isValidSelection, 
   getSelectionContext,
   getConvertToLyricsAction,
+  getGenerateVersesAction,
   AI_ACTIONS 
 } from './actions-handler';
 export type { TextSelection, AIAction } from './actions-handler';
